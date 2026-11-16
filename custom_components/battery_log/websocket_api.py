@@ -50,6 +50,7 @@ _TYPE = vol.All(cv.string, vol.Length(min=1, max=MAX_TYPE_LENGTH))
 def async_setup_websocket(hass: HomeAssistant) -> None:
     """Register all commands."""
     websocket_api.async_register_command(hass, ws_subscribe)
+    websocket_api.async_register_command(hass, ws_get)
     for handler in (
         _command(
             {
@@ -114,6 +115,17 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
         ),
     ):
         websocket_api.async_register_command(hass, handler)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "battery_log/get"})
+@websocket_api.require_admin
+@callback
+def ws_get(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict) -> None:
+    """One-shot snapshot (same payload as the subscription), handy for diagnostics."""
+    try:
+        connection.send_result(msg["id"], _manager(hass).snapshot())
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "battery_log_error", str(err))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "battery_log/subscribe"})

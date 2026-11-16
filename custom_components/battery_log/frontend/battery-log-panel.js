@@ -72,7 +72,7 @@ td select { min-width:130px; height:38px; }
 .pill.ok { background:var(--success-color, #43a047); color:#fff; }
 .pill.off { opacity:.7; }
 .ibtn { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; padding:0; border-radius:50%; border:1px solid var(--divider-color); background:transparent; color:var(--primary-text-color); cursor:pointer; --mdc-icon-size:22px; flex:0 0 auto; }
-.ibtn.primary { background:var(--primary-color); border-color:var(--primary-color); color:var(--text-primary-color, #fff); }
+.ibtn.on { background:color-mix(in srgb, var(--primary-text-color) 16%, transparent); }
 .ibtn:hover { filter:brightness(1.15); }
 .btn { font:inherit; font-size:14px; cursor:pointer; border-radius:10px; padding:0 14px; height:38px; border:1px solid var(--divider-color); background:transparent; color:var(--primary-text-color); display:inline-flex; align-items:center; gap:6px; --mdc-icon-size:20px; }
 .btn.primary { background:var(--primary-color); color:var(--text-primary-color, #fff); border-color:var(--primary-color); }
@@ -84,14 +84,21 @@ td select { min-width:130px; height:38px; }
 .hist .when { font-weight:500; font-variant-numeric:tabular-nums; }
 .hist .meta { grid-column:1 / 3; color:var(--secondary-text-color); overflow-wrap:anywhere; }
 .hist .ibtn { width:34px; height:34px; --mdc-icon-size:18px; }
-tr.histrow td { background:var(--secondary-background-color, rgba(127,127,127,.08)); }
+tr.histrow td { background:color-mix(in srgb, var(--primary-text-color) 9%, transparent); color:var(--secondary-text-color); box-shadow:inset 3px 0 0 var(--primary-color); }
+tr.open td:first-child { box-shadow:inset 3px 0 0 var(--primary-color); }
 .dev { padding:14px; display:grid; gap:12px; border-bottom:1px solid var(--divider-color); }
 .dev:last-child { border-bottom:0; }
+.dev.open { box-shadow:inset 3px 0 0 var(--primary-color); background:color-mix(in srgb, var(--primary-text-color) 4%, transparent); }
 .dev-top { display:flex; gap:10px; align-items:flex-start; justify-content:space-between; }
 .dev-top > :first-child { min-width:0; }
 .dev-mid { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:12px; align-items:center; font-size:13px; }
 .dev-foot { display:flex; justify-content:space-between; align-items:center; gap:10px; }
-.dev .histbox { padding-top:4px; border-top:1px dashed var(--divider-color); }
+.dev .histbox { padding:10px 12px; border-radius:10px; background:color-mix(in srgb, var(--primary-text-color) 9%, transparent); color:var(--secondary-text-color); }
+.histbox .hist .when, tr.histrow .hist .when { font-weight:400; }
+.histbox .ibtn, tr.histrow .ibtn { background:transparent; }
+.sect { font-size:13px; font-weight:500; color:var(--secondary-text-color); text-transform:uppercase; letter-spacing:.04em; margin:4px 2px -4px; }
+.foot { font-size:13px; color:var(--secondary-text-color); display:flex; gap:8px; align-items:center; }
+.linkbtn { font:inherit; font-size:13px; background:none; border:0; padding:0; color:var(--primary-color); cursor:pointer; text-decoration:underline; }
 .empty { padding:28px; text-align:center; color:var(--secondary-text-color); }
 .mrow { display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid var(--divider-color); }
 .mrow:last-child { border-bottom:0; }
@@ -236,17 +243,19 @@ class BatteryLogPanel extends HTMLElement {
     this._stats = h("div", { class: "stats" });
     this._buy = h("div", { class: "buy" });
     this._tableHost = h("div", { class: "card" }, h("div", { class: "empty" }, "Loading…"));
+    this._ignoredNote = h("div", { class: "foot", hidden: true });
     this._tableView = h(
       "div",
       { class: "wrap" },
       this._stats,
       this._buy,
       h("div", { class: "filters" }, h("div", { class: "row1" }, this._search, h("div", { class: "sortctl" }, this._sortSel, this._sortDir)), h("div", { class: "row3" }, this._typeSel, this._areaSel, this._statusSel)),
-      this._tableHost
+      this._tableHost,
+      this._ignoredNote
     );
 
     this._manageSearch = h("input", { type: "search", placeholder: "Search devices…", oninput: (e) => { this._manageQ = e.target.value; this._renderManage(); } });
-    this._manageList = h("div", { class: "card" });
+    this._manageList = h("div", { class: "wrap", style: "padding:0" });
     this._manageView = h(
       "div",
       { class: "wrap", hidden: true },
@@ -360,6 +369,11 @@ class BatteryLogPanel extends HTMLElement {
     this._buy.replaceChildren(
       ...(low.length ? ["To buy: ", h("b", {}, Object.entries(buy).sort().map(([t, n]) => `${t} ×${n}`).join(", "))] : [])
     );
+    const ignoredCount = this._data.devices.length - all.length;
+    this._ignoredNote.hidden = !ignoredCount;
+    this._ignoredNote.replaceChildren(
+      ...(ignoredCount ? [`${ignoredCount} ignored device${ignoredCount > 1 ? "s" : ""}.`, h("button", { class: "linkbtn", onclick: () => this._setView("manage") }, "Show or restore")] : [])
+    );
     this._sortSel.value = this._sort.key;
     this._sortDir.replaceChildren(this._icon(this._sort.dir > 0 ? "mdi:arrow-up" : "mdi:arrow-down", this._sort.dir > 0 ? "↑" : "↓"));
 
@@ -373,9 +387,17 @@ class BatteryLogPanel extends HTMLElement {
 
   // ---------------------------------------------------------------- formats
 
+  /** Date/time in the device's own format; an explicit HA profile choice (DMY/MDY/YMD, 12/24 h) wins. */
   _fmtDate(iso, withTime = false) {
-    const opts = withTime ? { dateStyle: "medium", timeStyle: "short" } : { dateStyle: "medium" };
-    return new Date(iso).toLocaleString(this._hass?.locale?.language, opts);
+    const loc = this._hass?.locale || {};
+    const system = navigator.languages?.[0] || navigator.language || undefined;
+    const dateLocale = { DMY: "en-GB", MDY: "en-US", YMD: "sv-SE" }[loc.date_format] || system;
+    const hour12 = loc.time_format === "am_pm" ? true : loc.time_format === "twenty_four" ? false : undefined;
+    const d = new Date(iso);
+    const date = new Intl.DateTimeFormat(dateLocale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+    if (!withTime) return date;
+    const time = new Intl.DateTimeFormat(system, { hour: "2-digit", minute: "2-digit", hour12 }).format(d);
+    return `${date}, ${time}`;
   }
 
   _daysAgo(iso) {
@@ -433,14 +455,14 @@ class BatteryLogPanel extends HTMLElement {
     const open = this._expanded.has(d.device_id);
     const tr = h(
       "tr",
-      {},
+      { class: open && d.history.length ? "open" : "" },
       h("td", {}, h("div", { class: "name" }, d.name, d.suspected ? h("button", { class: "warnbtn small", title: "Confirm date and note", onclick: () => this._openChange(d) }, "Replaced?") : null), h("div", { class: "sub" }, this._subline(d))),
       h("td", {}, this._typeSelect(d)),
       h("td", {}, this._levelPill(d)),
       h("td", {}, d.last_changed ? [this._fmtDate(d.last_changed), h("div", { class: "sub" }, this._daysAgo(d.last_changed))] : h("span", { class: "muted" }, "never")),
-      h("td", {}, d.changes ? h("button", { class: "btn", onclick: () => this._toggleHistory(d.device_id) }, `${d.changes}`, this._icon(open ? "mdi:chevron-up" : "mdi:chevron-down", open ? "▴" : "▾")) : h("span", { class: "muted" }, "0")),
+      h("td", {}, d.changes ? h("button", { class: "btn", onclick: () => this._toggleHistory(d.device_id) }, `${d.changes}`, this._icon("mdi:format-list-bulleted", "☰")) : h("span", { class: "muted" }, "0")),
       h("td", {}, this._avg(d) || h("span", { class: "muted" }, "—")),
-      h("td", {}, h("button", { class: "btn primary", onclick: () => this._openChange(d) }, this._icon("mdi:battery-sync", "⟳"), "Change battery"))
+      h("td", {}, h("button", { class: "btn", onclick: () => this._openChange(d) }, this._icon("mdi:battery-sync", "⟳"), "Change battery"))
     );
     const out = [tr];
     if (open && d.history.length) out.push(h("tr", { class: "histrow" }, h("td", { colspan: COLUMNS.length }, this._historyList(d))));
@@ -454,7 +476,7 @@ class BatteryLogPanel extends HTMLElement {
     const stats = [d.changes ? `${d.changes} change${d.changes > 1 ? "s" : ""}` : "no changes logged", this._avg(d) ? `avg ${this._avg(d)}` : null].filter(Boolean).join(" · ");
     return h(
       "div",
-      { class: "dev" },
+      { class: open && d.history.length ? "dev open" : "dev" },
       h("div", { class: "dev-top" }, h("div", {}, h("div", { class: "name" }, d.name), h("div", { class: "sub" }, this._subline(d))), this._levelPill(d)),
       d.suspected ? h("button", { class: "warnbtn", onclick: () => this._openChange(d) }, "Replaced? Tap to confirm date and note") : null,
       h("div", { class: "dev-mid" }, this._typeSelect(d), d.last_changed ? h("div", {}, h("div", {}, this._fmtDate(d.last_changed)), h("div", { class: "sub" }, this._daysAgo(d.last_changed))) : h("div", { class: "muted" }, "never changed")),
@@ -462,7 +484,7 @@ class BatteryLogPanel extends HTMLElement {
         "div",
         { class: "dev-foot" },
         h("div", { class: "sub" }, stats),
-        h("div", { class: "actions" }, d.changes ? this._ibtn(open ? "mdi:chevron-up" : "mdi:history", open ? "▴" : "⏱", "History", () => this._toggleHistory(d.device_id)) : null, this._ibtn("mdi:battery-sync", "⟳", "Change battery", () => this._openChange(d), "primary"))
+        h("div", { class: "actions" }, d.changes ? this._ibtn("mdi:format-list-bulleted", "☰", "History", () => this._toggleHistory(d.device_id), open ? "on" : "") : null, this._ibtn("mdi:battery-sync", "⟳", "Change battery", () => this._openChange(d)))
       ),
       open && d.history.length ? h("div", { class: "histbox" }, this._historyList(d)) : null
     );
@@ -500,31 +522,52 @@ class BatteryLogPanel extends HTMLElement {
     const list = [...this._data.devices]
       .filter((d) => !q || [d.name, d.area, d.model].some((s) => s && s.toLowerCase().includes(q)))
       .sort((a, b) => a.name.localeCompare(b.name));
-    this._manageList.replaceChildren(
-      list.length
-        ? h(
-            "div",
-            {},
-            list.map((d) =>
+    const section = (title, items, emptyText) => [
+      h("div", { class: "sect" }, `${title} (${items.length})`),
+      h(
+        "div",
+        { class: "card" },
+        items.length
+          ? items.map((d) =>
               h(
                 "label",
                 { class: `mrow${d.ignored ? " off" : ""}` },
                 h("div", { class: "grow" }, h("div", { class: "name" }, d.name), h("div", { class: "sub" }, this._subline(d))),
                 this._levelPill(d),
-                h("input", { class: "switch", type: "checkbox", title: "Track this device", checked: !d.ignored, onchange: (e) => this._toggleTrack(d, e.target) })
+                h("input", { class: "switch", type: "checkbox", title: d.ignored ? "Start tracking" : "Stop tracking", checked: !d.ignored, onchange: (e) => this._toggleTrack(d, e.target) })
               )
             )
-          )
-        : h("div", { class: "empty" }, "No devices.")
+          : h("div", { class: "empty" }, emptyText)
+      ),
+    ];
+    this._manageList.replaceChildren(
+      ...section("Tracked", list.filter((d) => !d.ignored), "No tracked devices."),
+      ...section("Ignored", list.filter((d) => d.ignored), "Nothing is ignored.")
     );
   }
 
   async _toggleTrack(d, input) {
-    const err = await this._run({ type: "battery_log/set_ignored", device_id: d.device_id, ignored: !input.checked });
-    if (err) {
-      input.checked = !input.checked;
-      this._alert(err);
+    if (input.checked) {
+      // back to tracking: no confirmation needed
+      const err = await this._run({ type: "battery_log/set_ignored", device_id: d.device_id, ignored: false });
+      if (err) {
+        input.checked = false;
+        this._alert(err);
+      }
+      return;
     }
+    let done = false;
+    this._dialog.addEventListener("close", () => { if (!done) input.checked = true; }, { once: true });
+    this._openDialog({
+      title: `Stop tracking ${d.name}?`,
+      hint: "Its Battery Log entities are removed and it disappears from the table. The history is kept, and you can switch it back on in the Ignored list.",
+      saveLabel: "Ignore",
+      save: async () => {
+        const err = await this._run({ type: "battery_log/set_ignored", device_id: d.device_id, ignored: true });
+        if (!err) done = true;
+        return err;
+      },
+    });
   }
 
   // ---------------------------------------------------------------- actions
