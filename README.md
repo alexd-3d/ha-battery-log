@@ -17,20 +17,23 @@ devices by itself.
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=alexd-3d&repository=ha-battery-log&category=integration)
 
 <p>
-  <img src="images/mobile-list.jpg" width="250" alt="Device list on a phone">
-  <img src="images/mobile-history.jpg" width="250" alt="Change history with intervals">
-  <img src="images/tracked-devices.jpg" width="250" alt="Tracked and ignored devices">
+  <img src="images/mobile-list.png" width="250" alt="Devices sorted by level: red, yellow and green">
+  <img src="images/mobile-history.png" width="250" alt="Change history with the interval since the previous change">
+  <img src="images/new-device.png" width="250" alt="Newly found devices waiting for a type and a first entry">
 </p>
-
-![Table on a wide screen](images/desktop-table.jpg)
 
 <p>
-  <img src="images/dialog-confirm.jpg" width="250" alt="Confirming a possible replacement">
-  <img src="images/mobile-list-uk.jpg" width="250" alt="The same list in Ukrainian">
+  <img src="images/dialog-confirm.png" width="250" alt="Confirming a possible replacement">
+  <img src="images/tracked-devices.png" width="250" alt="Tracked and ignored devices">
 </p>
 
-<sub>Screenshots show the author's real devices (one room name and one raw device
-address are masked). The "Replaced?" dialog uses demo data.</sub>
+![Table on a wide screen](images/desktop-table.png)
+
+<sub>Screenshots use invented demo devices and are in English. The panel and the
+integration are also available in Ukrainian and follow your Home Assistant
+language. From left to right: sorting by level, history with intervals, newly
+found devices (no type and no entries yet), confirming a possible replacement,
+the tracked and ignored devices screen.</sub>
 
 ## Features
 

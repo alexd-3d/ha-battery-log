@@ -17,20 +17,22 @@
 [![Додати в HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=alexd-3d&repository=ha-battery-log&category=integration)
 
 <p>
-  <img src="images/mobile-list-uk.jpg" width="250" alt="Список пристроїв на телефоні">
-  <img src="images/mobile-history.jpg" width="250" alt="Історія замін з інтервалами">
-  <img src="images/tracked-devices.jpg" width="250" alt="Відстежувані й ігноровані пристрої">
+  <img src="images/mobile-list.png" width="250" alt="Пристрої за рівнем: червоний, жовтий і зелений">
+  <img src="images/mobile-history.png" width="250" alt="Історія замін з інтервалом від попередньої">
+  <img src="images/new-device.png" width="250" alt="Нові знайдені пристрої, що чекають на тип і перший запис">
 </p>
-
-![Таблиця на широкому екрані](images/desktop-table.jpg)
 
 <p>
-  <img src="images/dialog-confirm.jpg" width="250" alt="Підтвердження можливої заміни">
+  <img src="images/dialog-confirm.png" width="250" alt="Підтвердження можливої заміни">
+  <img src="images/tracked-devices.png" width="250" alt="Відстежувані й ігноровані пристрої">
 </p>
 
-<sub>На знімках справжні пристрої автора (одну назву кімнати й одну сиру адресу
-пристрою замасковано). Діалог «Замінено?» зроблено на демо-даних. Частина
-знімків англійською: мова панелі береться з вашого профілю Home Assistant.</sub>
+![Таблиця на широкому екрані](images/desktop-table.png)
+
+<sub>На знімках вигадані демо-пристрої, інтерфейс англійською. Українською панель і
+інтеграція вмикаються за мовою вашого профілю Home Assistant. Зліва направо:
+сортування за рівнем, історія з інтервалами, нові знайдені пристрої (ще без типу й
+записів), підтвердження можливої заміни, екран відстежуваних і ігнорованих пристроїв.</sub>
 
 ## Можливості
 
