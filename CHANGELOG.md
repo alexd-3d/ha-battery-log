@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+- Added GitHub Actions: Hassfest, HACS validation and tests (no functional change).
+
 ## 0.3.1
 
 - Fixed: the Import from Battery Notes entry was offered when Battery Notes only had ignored discovery entries. It now appears only when Battery Notes is really set up.
