@@ -11,17 +11,22 @@
     }
   },
   "options": {
+    "error": {
+      "warn_not_above_low": "The warning level must be higher than the low level."
+    },
     "step": {
       "init": {
         "title": "Battery Log options",
         "data": {
           "show_in_sidebar": "Show in sidebar",
-          "low_threshold": "Low battery level",
+          "low_threshold": "Low level (red)",
+          "warn_threshold": "Warning level (yellow)",
           "replacement_jump": "Possible replacement: level rise"
         },
         "data_description": {
           "show_in_sidebar": "The table stays reachable from this integration's page when hidden.",
-          "low_threshold": "Devices at or below this level are marked Low.",
+          "low_threshold": "Devices at or below this level are marked Low (red) and counted in the shopping summary.",
+          "warn_threshold": "Levels above Low and up to this value are yellow, higher is green. Must be above the Low level.",
           "replacement_jump": "A rise of at least this many percentage points suggests the battery was replaced, and asks you to confirm."
         }
       }

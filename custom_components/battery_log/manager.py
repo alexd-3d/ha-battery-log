@@ -24,8 +24,10 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_LOW_THRESHOLD,
     CONF_REPLACEMENT_JUMP,
+    CONF_WARN_THRESHOLD,
     DEFAULT_LOW_THRESHOLD,
     DEFAULT_REPLACEMENT_JUMP,
+    DEFAULT_WARN_THRESHOLD,
     DOMAIN,
     EVENT_CHANGED,
     EVENT_REPLACEMENT_SUSPECTED,
@@ -85,6 +87,10 @@ class BatteryLogManager:
     @property
     def low_threshold(self) -> int:
         return int(self.entry.options.get(CONF_LOW_THRESHOLD, DEFAULT_LOW_THRESHOLD))
+
+    @property
+    def warn_threshold(self) -> int:
+        return int(self.entry.options.get(CONF_WARN_THRESHOLD, DEFAULT_WARN_THRESHOLD))
 
     @property
     def replacement_jump(self) -> int:
@@ -488,6 +494,7 @@ class BatteryLogManager:
         return {
             "types": list(self.store.types),
             "low_threshold": self.low_threshold,
+            "warn_threshold": self.warn_threshold,
             "devices": devices,
         }
 

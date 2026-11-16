@@ -14,9 +14,11 @@ from .const import (
     CONF_LOW_THRESHOLD,
     CONF_REPLACEMENT_JUMP,
     CONF_SHOW_IN_SIDEBAR,
+    CONF_WARN_THRESHOLD,
     DEFAULT_LOW_THRESHOLD,
     DEFAULT_REPLACEMENT_JUMP,
     DEFAULT_SHOW_IN_SIDEBAR,
+    DEFAULT_WARN_THRESHOLD,
     DOMAIN,
 )
 
@@ -53,9 +55,13 @@ class BatteryLogOptionsFlow(OptionsFlowWithReload):
     """Sidebar toggle and two thresholds."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
-        options = self.config_entry.options
+            if user_input[CONF_WARN_THRESHOLD] <= user_input[CONF_LOW_THRESHOLD]:
+                errors["base"] = "warn_not_above_low"
+            else:
+                return self.async_create_entry(data=user_input)
+        options = user_input or self.config_entry.options
         schema = vol.Schema(
             {
                 vol.Required(
@@ -67,9 +73,13 @@ class BatteryLogOptionsFlow(OptionsFlowWithReload):
                     default=options.get(CONF_LOW_THRESHOLD, DEFAULT_LOW_THRESHOLD),
                 ): _percent(DEFAULT_LOW_THRESHOLD, 1, 100),
                 vol.Required(
+                    CONF_WARN_THRESHOLD,
+                    default=options.get(CONF_WARN_THRESHOLD, DEFAULT_WARN_THRESHOLD),
+                ): _percent(DEFAULT_WARN_THRESHOLD, 2, 100),
+                vol.Required(
                     CONF_REPLACEMENT_JUMP,
                     default=options.get(CONF_REPLACEMENT_JUMP, DEFAULT_REPLACEMENT_JUMP),
                 ): _percent(DEFAULT_REPLACEMENT_JUMP, 5, 100),
             }
         )
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

@@ -68,6 +68,8 @@ td select { min-width:130px; height:38px; }
 .muted { color:var(--secondary-text-color); }
 .pill { display:inline-block; font-size:13px; padding:2px 10px; border-radius:12px; background:var(--secondary-background-color, rgba(127,127,127,.2)); font-variant-numeric:tabular-nums; white-space:nowrap; }
 .pill.low { background:var(--error-color, #db4437); color:#fff; }
+.pill.mid { background:var(--warning-color, #ffa600); color:#000; }
+.pill.ok { background:var(--success-color, #43a047); color:#fff; }
 .pill.off { opacity:.7; }
 .ibtn { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; padding:0; border-radius:50%; border:1px solid var(--divider-color); background:transparent; color:var(--primary-text-color); cursor:pointer; --mdc-icon-size:22px; flex:0 0 auto; }
 .ibtn.primary { background:var(--primary-color); border-color:var(--primary-color); color:var(--text-primary-color, #fff); }
@@ -386,7 +388,11 @@ class BatteryLogPanel extends HTMLElement {
   }
 
   _levelPill(d) {
-    if (d.level !== null) return h("span", { class: `pill${d.low ? " low" : ""}` }, `${Math.round(d.level)} %`);
+    if (d.level !== null) {
+      // red: low, yellow: up to the warning level, green: fine (levels come from the integration options)
+      const tone = d.low ? "low" : d.level <= (this._data?.warn_threshold ?? 50) ? "mid" : "ok";
+      return h("span", { class: `pill ${tone}` }, `${Math.round(d.level)} %`);
+    }
     if (d.low) return h("span", { class: "pill low" }, "Low");
     return h("span", { class: "pill off" }, d.unavailable ? "offline" : "—");
   }
