@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+
+- New: **Import from Battery Notes** in the Configure menu (types and last-replaced
+  dates). The entry only appears when Battery Notes is installed; it never changes
+  Battery Notes and is safe to repeat.
+- Configure now opens a small menu (Settings, Import) when Battery Notes is
+  present; otherwise it goes straight to Settings as before.
+
 ## 0.2.1
 
 - Fixed: the text "null" appeared above the fields in the Change battery dialog.

@@ -16,6 +16,13 @@
     },
     "step": {
       "init": {
+        "title": "Battery Log",
+        "menu_options": {
+          "settings": "Settings",
+          "import_battery_notes": "Import from Battery Notes"
+        }
+      },
+      "settings": {
         "title": "Battery Log options",
         "data": {
           "show_in_sidebar": "Show in sidebar",
@@ -29,18 +36,40 @@
           "warn_threshold": "Levels above Low and up to this value are yellow, higher is green. Must be above the Low level.",
           "replacement_jump": "A rise of at least this many percentage points suggests the battery was replaced, and asks you to confirm."
         }
+      },
+      "import_battery_notes": {
+        "title": "Import from Battery Notes",
+        "description": "Takes over what Battery Notes knows, once. Nothing is changed in Battery Notes, and running it again adds nothing twice.\n\nFound {devices} device(s) in Battery Notes. Would add {new_entries} last-replaced date(s) and set {type_updates} battery type(s). {already} date(s) are already in the history, {not_tracked} device(s) are not tracked by Battery Log.\n\nBattery types that are not in your list are skipped and mentioned in the entry note: {unknown_types}. Add them to the list first to import them.",
+        "data": {
+          "import_types": "Set battery types",
+          "import_dates": "Add last-replaced dates"
+        },
+        "data_description": {
+          "import_types": "Only for devices that have no type yet, and only for types that exist in your list.",
+          "import_dates": "Adds one history entry per device with the note \"Imported from Battery Notes\". Battery Notes may hold the day you started tracking rather than a real replacement, so check the dates afterwards."
+        }
       }
+    },
+    "abort": {
+      "imported": "Done. Added {new_entries} history entr(ies) and set {type_updates} battery type(s). Skipped {already} that already existed. Types not in your list: {unknown_types}.",
+      "nothing_to_import": "Nothing to import: {already} date(s) are already in the history and no new types were found. Types not in your list: {unknown_types}."
     }
   },
   "entity": {
     "select": {
-      "battery_type": {"name": "Battery type"}
+      "battery_type": {
+        "name": "Battery type"
+      }
     },
     "button": {
-      "battery_changed": {"name": "Battery changed"}
+      "battery_changed": {
+        "name": "Battery changed"
+      }
     },
     "sensor": {
-      "battery_last_changed": {"name": "Battery last changed"}
+      "battery_last_changed": {
+        "name": "Battery last changed"
+      }
     }
   },
   "services": {
@@ -48,25 +77,46 @@
       "name": "Log battery change",
       "description": "Records that a device battery was changed.",
       "fields": {
-        "device_id": {"name": "Device", "description": "The battery device."},
-        "date": {"name": "Date", "description": "When it was changed (now when empty)."},
-        "note": {"name": "Note", "description": "Free text, e.g. manufacturer and where it was bought."},
-        "battery_type": {"name": "Battery type", "description": "Must exist in the type list."}
+        "device_id": {
+          "name": "Device",
+          "description": "The battery device."
+        },
+        "date": {
+          "name": "Date",
+          "description": "When it was changed (now when empty)."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Free text, e.g. manufacturer and where it was bought."
+        },
+        "battery_type": {
+          "name": "Battery type",
+          "description": "Must exist in the type list."
+        }
       }
     },
     "set_type": {
       "name": "Set battery type",
       "description": "Sets the battery type of a device.",
       "fields": {
-        "device_id": {"name": "Device", "description": "The battery device."},
-        "battery_type": {"name": "Battery type", "description": "Must exist in the type list."}
+        "device_id": {
+          "name": "Device",
+          "description": "The battery device."
+        },
+        "battery_type": {
+          "name": "Battery type",
+          "description": "Must exist in the type list."
+        }
       }
     },
     "add_type": {
       "name": "Add battery type",
       "description": "Adds a battery type to the shared list.",
       "fields": {
-        "battery_type": {"name": "Battery type", "description": "New type name."}
+        "battery_type": {
+          "name": "Battery type",
+          "description": "New type name."
+        }
       }
     }
   }

@@ -58,6 +58,8 @@ the tracked and ignored devices screen.</sub>
 - **Tracked devices screen.** Switch off devices that should not be tracked
   (an inverter battery bank, for example). Ignoring asks for confirmation, and
   ignored devices stay in a list from where you can restore them.
+- **Import from Battery Notes** (types and last replaced dates) from the integration's
+  Configure menu, shown only when Battery Notes is installed.
 - **Automation friendly.** Services and events (see below).
 - **Local only.** Data lives in `.storage/battery_log`; the integration makes
   no network requests.
@@ -152,11 +154,22 @@ automation:
 
 ## Coming from Battery Notes
 
-Battery Notes stores only the last replacement date for a device, and that date
-may be the day you started using it rather than a real replacement. If you want
-to carry your data over, call `battery_log.change` once per device
-(Developer tools, Actions) with `device_id`, `date`, `battery_type` and a note.
-Both integrations can run side by side, so you can switch whenever you like.
+If Battery Notes is installed, **Settings, Devices & services, Battery Log,
+Configure** offers **Import from Battery Notes** (the entry is not shown when
+Battery Notes is not installed). It takes over, once:
+
+- the battery **type** of each device, only where Battery Log has none yet and only
+  for types that exist in your list (types that do not exist are listed in the
+  result and kept in the note; add them to the list and run it again);
+- the **last replaced** date of each device as one history entry with the note
+  "Imported from Battery Notes". A battery quantity such as "2x" and the
+  Battery Notes note are appended to that note.
+
+Nothing is changed in Battery Notes, running the import again does not add
+anything twice, and importing does not fire the `battery_log_changed` event.
+Battery Notes keeps only one date per device, and it can be the day you started
+tracking rather than a real replacement, so check the dates afterwards. Both
+integrations can run side by side.
 
 ## How it compares
 

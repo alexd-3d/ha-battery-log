@@ -34,6 +34,7 @@ from .const import (
     MAX_NOTE_LENGTH,
     MAX_TYPE_LENGTH,
     SIGNAL_TYPES_CHANGED,
+    SOURCE_IMPORT,
     signal_device,
 )
 from .logic import (
@@ -42,9 +43,11 @@ from .logic import (
     detect_low_cleared,
     last_changed,
     parse_iso,
+    plan_import,
     sorted_history,
     to_float,
 )
+from .importer import collect_battery_notes
 from .store import BatteryLogStore
 
 _LOGGER = logging.getLogger(__name__)
@@ -323,8 +326,12 @@ class BatteryLogManager:
         note: str | None = None,
         type_: str | None = None,
         source: str,
+        historic: bool = False,
     ) -> dict[str, Any]:
-        """Record a battery change (now when `at` is omitted)."""
+        """Record a battery change (now when `at` is omitted).
+
+        `historic` entries (imports) neither fire the event nor clear a pending hint.
+        """
         self._require_device(device_id)
         self._check_type(type_)
         note = self._clean_note(note)
@@ -340,21 +347,46 @@ class BatteryLogManager:
             "source": source,
         }
         record["history"].append(entry)
-        record["suspected"] = None
+        if not historic:
+            record["suspected"] = None
         self.store.async_schedule_save()
-        self.hass.bus.async_fire(
-            EVENT_CHANGED,
-            {
-                "device_id": device_id,
-                "device_name": self._device_name(device_id),
-                "changed_at": entry["at"],
-                "note": note,
-                "battery_type": entry["type"],
-                "source": source,
-            },
-        )
+        if not historic:
+            self.hass.bus.async_fire(
+                EVENT_CHANGED,
+                {
+                    "device_id": device_id,
+                    "device_name": self._device_name(device_id),
+                    "changed_at": entry["at"],
+                    "note": note,
+                    "battery_type": entry["type"],
+                    "source": source,
+                },
+            )
         self._notify_device(device_id)
         return entry
+
+    # ------------------------------------------------------- Battery Notes import
+
+    def preview_battery_notes(self, *, import_types: bool = True, import_dates: bool = True) -> dict[str, Any]:
+        """What an import would do right now (nothing is changed)."""
+        return plan_import(
+            collect_battery_notes(self.hass),
+            self.store.types,
+            self.store.devices,
+            self.active_ids,
+            import_types=import_types,
+            import_dates=import_dates,
+        )
+
+    @callback
+    def async_import_battery_notes(self, *, import_types: bool = True, import_dates: bool = True) -> dict[str, Any]:
+        """Take over types and last-replaced dates from Battery Notes (safe to repeat)."""
+        plan = self.preview_battery_notes(import_types=import_types, import_dates=import_dates)
+        for device_id, type_ in plan["set_types"]:
+            self.async_set_type(device_id, type_)
+        for device_id, at, note in plan["adds"]:
+            self.async_log_change(device_id, at=at, note=note, source=SOURCE_IMPORT, historic=True)
+        return plan
 
     @callback
     def async_update_change(

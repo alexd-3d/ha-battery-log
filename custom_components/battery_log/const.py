@@ -51,6 +51,8 @@ MAX_TYPE_LENGTH = 40
 SOURCE_BUTTON = "button"
 SOURCE_PANEL = "panel"
 SOURCE_SERVICE = "service"
+SOURCE_IMPORT = "import"
+BATTERY_NOTES_DOMAIN = "battery_notes"
 
 
 def signal_device(device_id: str) -> str:
