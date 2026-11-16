@@ -173,35 +173,54 @@ integrations can run side by side.
 
 ## How it compares
 
-Short, factual overview of related projects as of November 2026, based on their
-public documentation and community posts. Projects change, so please check
-their pages for current details, and tell me if something here is out of date.
+An overview of related projects as of November 2026. It is based only on their
+public documentation and community posts, read by the author of Battery Log, so it
+is not a test of the software. Projects change quickly: please check their pages,
+and open an issue here if something is wrong or out of date.
+
+"Not documented" means the pages I read did not say. It does not mean "no".
 
 | | **Battery Log** | [Battery Notes](https://github.com/andrew-codechimp/HA-Battery-Notes) | [Device Sentinel](https://github.com/TheThinkingHome/device_sentinel) | [BatteryBrain](https://github.com/larsbaum/battery_brain) | [Battery Status Manager](https://github.com/OleSint/ha-battery-status-manager) |
 |---|---|---|---|---|---|
-| Main purpose | Battery type and replacement log | Battery type, last replaced, low and not-reported tracking | Frozen devices, battery and signal health | Learns discharge behaviour per device | Low-battery and fast-drain notifications |
-| Finds battery devices on its own | Yes, from the registries | Library match, then you add each device from a discovery card (or manually) | Learns devices automatically | Yes | Monitors all battery entities (scope chosen in setup) |
-| Full replacement history | **Yes**, with notes, edit, delete | Last date only | Swap detection with history and archive | Not documented | No |
-| Replacement detection | Hint, you confirm (editable date) | Event on level increase; the date is not updated | Detects a swap and asks you to confirm | Not documented | No |
-| Interval between replacements | Yes, per entry and average | No | Remaining-life estimates | Not documented | No |
-| Own table with filters | Yes (panel) | No (integration page and your dashboards) | Yes (sidebar dashboard) | No (four summary sensors) | No |
-| Battery type | Your own list | Community library plus manual entry | Not documented | Not documented | No |
-| Notifications | No (events for your automations) | No (events, triggers, actions) | Yes | Not documented | Yes |
-| Predictions | No | No | Yes | Adaptive thresholds | Depletion forecast for numeric sensors |
-| External data | None | Downloads a device library | Not documented | Not documented | Not documented |
-| Entities added per device | 3 | 4 to 5 | Not documented | None per device (summary sensors) | None |
+| **Purpose** | Battery type and replacement log | Battery type, last replaced, low and not-reported tracking | Frozen devices, battery and signal health | Learns discharge behaviour per device | Low-battery and fast-drain notifications |
+| **Finding devices** | From the registries, no per-device step | Library match, then each device is added from a discovery card (or manually) | Learns devices automatically | Automatic | All battery entities (scope chosen in setup) |
+| **Battery type** | Your own list (9 predefined, add your own) | Community library plus manual entry | Not documented | Not documented | No |
+| **Battery quantity** | No | Yes | Not documented | Not documented | No |
+| **Last replaced date** | Yes | Yes | Yes (detected, you confirm) | Not documented | No |
+| **Full replacement history** | Yes, with notes, edit and delete | No, last date only | Yes, with an archive | Not documented | No |
+| **Note per replacement** | Yes | One note per device | Not documented | Not documented | No |
+| **Replacement detection** | Hint on a level jump, you confirm (date editable) | Event on a level increase, does not set the date | Detects a swap, asks you to confirm | Not documented | No |
+| **Lifetime between replacements** | Per entry and average, from your history | No | Not documented (has remaining-life estimates) | Not documented | No (has a depletion forecast for numeric sensors) |
+| **Low battery** | Colour in the panel and a shopping summary, global thresholds, no entity or event | Yes: sensor, thresholds per device, events, triggers | Yes | Adaptive thresholds | Yes, with notifications |
+| **"Not reported" detection** | No | Yes | Yes | Yes | Yes |
+| **Notifications built in** | No | No | Yes | Not documented | Yes |
+| **Events, triggers, services** | 2 events, 3 services | Events, triggers, actions | Fail and recover events | Not documented | Not documented |
+| **Predictions or learning** | No | No (stated in its FAQ) | Yes | Yes | Drain alerts, forecast |
+| **Own table with filters** | Yes (panel, phone layout) | No (integration page and your dashboards) | Yes (sidebar dashboard) | No (four summary sensors) | No |
+| **Entities added per device** | 3 | 4 to 5 | Not documented | None per device | None |
+| **Devices without a battery sensor in HA** | Not supported | Via a companion integration | Not documented | Not documented | Not documented |
+| **Import from another project** | From Battery Notes | Not documented | Not documented | Not documented | Not documented |
+| **Network use** | None | Downloads a device library | Author states none apart from your notifications | Not documented | Not documented |
+| **Languages** | English, Ukrainian | Many (translation files in the repo) | Not documented | Not documented | Not documented |
+| **Minimum Home Assistant** | 2026.10 | 2026.8 (3.8.x, release notes) | 2026.5 | Not documented | 2023.6 |
+| **Distribution** | HACS custom repository | HACS default store | HACS custom repository (default-store submission mentioned) | HACS custom repository | HACS custom repository |
+| **Maturity** | New: first public release in November 2026, used in one home, tested with Zigbee2MQTT devices | Established: about 29,000 HACS downloads and 1,200 stars (HACS data, November 2026), many releases | Beta, per its author | Beta, per its author | Beta, per its author |
 
-Which one to pick:
+### What Battery Log does not do
 
-- Battery Log keeps a **record**: what battery, when it was replaced, notes,
-  how long it lasted. It deliberately does not send notifications or predict
-  anything.
-- Use **Battery Notes** if you want its device library and low/not-reported
-  triggers; it can replace per-device threshold logic.
-- Use **Device Sentinel** or **BatteryBrain** if you want learned health and
-  predictions; **Battery Status Manager** if you mostly want notifications.
-- They combine well: let another tool warn you, and write the replacement into
-  Battery Log.
+- No notifications, predictions or learning.
+- No low-battery or not-reported entities, triggers or per-device thresholds.
+- No battery library: types are the ones you pick, with no automatic suggestion by device model.
+- No battery quantity, and no devices without a battery sensor in Home Assistant.
+- Needs Home Assistant 2026.10 or newer, and an administrator account for the panel.
+- Young project: one author, tested on one installation.
+
+Sources: [Battery Notes docs](https://codechimp.org/HA-Battery-Notes/) and
+[FAQ](https://codechimp.org/HA-Battery-Notes/faq/),
+[Device Sentinel thread](https://community.home-assistant.io/t/device-sentinel-detect-frozen-hardware-with-device-learning/1029252),
+[BatteryBrain thread](https://community.home-assistant.io/t/new-integration-batterybrain-learns-your-battery-behavior/1011604),
+[Battery Status Manager thread](https://community.simon42.com/t/ha-battery-status-monitor-schwellwert-und-verlustrate-aller-battery-entitaeten-monitoren/85429).
+They can be combined: Battery Log only needs a battery sensor from any integration.
 
 ## Good to know
 
