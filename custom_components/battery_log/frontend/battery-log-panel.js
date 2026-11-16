@@ -20,7 +20,7 @@ const I18N = {
     never: "never", never_changed: "never changed", no_changes: "no changes logged",
     changes_n_one: "{n} change", changes_n_other: "{n} changes", avg: "avg {v}",
     today: "today", days_ago: "{n} d ago", days_short: "{n} d", months_short: "{v} mo", span_title: "{v} since the previous change",
-    pill_low: "Low", pill_offline: "offline", type_ph: "— type —", none_opt: "— not set —", add_type_opt: "＋ Add new type…",
+    auto_filled: "type auto-filled from the same model", pill_low: "Low", pill_offline: "offline", type_ph: "— type —", none_opt: "— not set —", add_type_opt: "＋ Add new type…",
     replaced_q: "Replaced?", confirm_title: "Confirm date and note", replaced_tap: "Replaced? Tap to confirm date and note",
     btn_change: "Change battery", btn_history: "History", btn_edit: "Edit", btn_delete: "Delete",
     manage_hint: "Every device with a battery sensor is found automatically. Switch a device off to stop tracking it: it loses its Battery Log entities and disappears from the table. History is kept.",
@@ -48,7 +48,7 @@ const I18N = {
     never: "ніколи", never_changed: "не змінювалась", no_changes: "замін не записано",
     changes_n_one: "{n} заміна", changes_n_few: "{n} заміни", changes_n_many: "{n} замін", changes_n_other: "{n} замін", avg: "сер. {v}",
     today: "сьогодні", days_ago: "{n} дн. тому", days_short: "{n} дн.", months_short: "{v} міс.", span_title: "{v} від попередньої заміни",
-    pill_low: "Низький", pill_offline: "не в мережі", type_ph: "— тип —", none_opt: "— не вказано —", add_type_opt: "＋ Додати новий тип…",
+    auto_filled: "тип підставлено за такою ж моделлю", pill_low: "Низький", pill_offline: "не в мережі", type_ph: "— тип —", none_opt: "— не вказано —", add_type_opt: "＋ Додати новий тип…",
     replaced_q: "Замінено?", confirm_title: "Підтвердіть дату й нотатку", replaced_tap: "Замінено? Торкніться, щоб підтвердити дату й нотатку",
     btn_change: "Замінити батарею", btn_history: "Історія", btn_edit: "Змінити", btn_delete: "Видалити",
     manage_hint: "Усі пристрої з датчиком батареї знаходяться автоматично. Вимкніть пристрій, щоб припинити його відстеження: його сутності Battery Log буде видалено, а з таблиці він зникне. Історію буде збережено.",
@@ -541,6 +541,10 @@ class BatteryLogPanel extends HTMLElement {
     );
   }
 
+  _autoHint(d) {
+    return d.type_auto ? h("div", { class: "sub" }, this._t("auto_filled")) : null;
+  }
+
   _subline(d) {
     return [d.area, d.model].filter(Boolean).join(" · ");
   }
@@ -569,7 +573,7 @@ class BatteryLogPanel extends HTMLElement {
       "tr",
       { class: open && d.history.length ? "open" : "" },
       h("td", {}, h("div", { class: "name" }, d.name, d.suspected ? h("button", { class: "warnbtn small", title: this._t("confirm_title"), onclick: () => this._openChange(d) }, this._t("replaced_q")) : null), h("div", { class: "sub" }, this._subline(d))),
-      h("td", {}, this._typeSelect(d)),
+      h("td", {}, this._typeSelect(d), this._autoHint(d)),
       h("td", {}, this._levelPill(d)),
       h("td", {}, d.last_changed ? [this._fmtDate(d.last_changed), h("div", { class: "sub" }, this._daysAgo(d.last_changed))] : h("span", { class: "muted" }, this._t("never"))),
       h("td", {}, d.changes ? h("button", { class: "btn", onclick: () => this._toggleHistory(d.device_id) }, `${d.changes}`, this._icon("mdi:format-list-bulleted", "☰")) : h("span", { class: "muted" }, "0")),
@@ -591,7 +595,7 @@ class BatteryLogPanel extends HTMLElement {
       { class: open && d.history.length ? "dev open" : "dev" },
       h("div", { class: "dev-top" }, h("div", {}, h("div", { class: "name" }, d.name), h("div", { class: "sub" }, this._subline(d))), this._levelPill(d)),
       d.suspected ? h("button", { class: "warnbtn", onclick: () => this._openChange(d) }, this._t("replaced_tap")) : null,
-      h("div", { class: "dev-mid" }, this._typeSelect(d), d.last_changed ? h("div", {}, h("div", {}, this._fmtDate(d.last_changed)), h("div", { class: "sub" }, this._daysAgo(d.last_changed))) : h("div", { class: "muted" }, this._t("never_changed"))),
+      h("div", { class: "dev-mid" }, h("div", {}, this._typeSelect(d), this._autoHint(d)), d.last_changed ? h("div", {}, h("div", {}, this._fmtDate(d.last_changed)), h("div", { class: "sub" }, this._daysAgo(d.last_changed))) : h("div", { class: "muted" }, this._t("never_changed"))),
       h(
         "div",
         { class: "dev-foot" },

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- New: battery type is auto-filled for devices of the same manufacturer and model
+  (when you set a type, and for newly found devices). Never overwrites a type,
+  skips conflicting types and types you cleared on purpose, marked in the panel,
+  can be switched off in the options.
+- Documentation: new comparison table, minimum Home Assistant 2025.8.
+
 ## 0.3.2
 
 - Added GitHub Actions: Hassfest, HACS validation and tests (no functional change).

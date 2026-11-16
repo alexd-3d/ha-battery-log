@@ -53,6 +53,10 @@ the tracked and ignored devices screen.</sub>
   "battery low" flag clears, the row gets a badge. Tap it to confirm: the date
   is pre-filled with when the jump was seen and you can edit it, add notes, or
   answer "Not replaced". Nothing is logged without your confirmation.
+- **Auto-fill by model.** When you set a battery type, other devices of the same manufacturer
+  and model that have none get it too, and so does a newly found device. Conflicting
+  types are never guessed, a type you clear yourself stays empty, and the panel marks
+  auto-filled types. Can be switched off in the options.
 - **Your own battery types.** Nine predefined (CR2032, CR2450, CR123A, CR2, AAA,
   AA, 9V, Built-in rechargeable, Other) plus "Add new type..." from the panel.
 - **Tracked devices screen.** Switch off devices that should not be tracked
@@ -109,6 +113,7 @@ Settings, Devices & services, Battery Log, **Configure**:
 | Show in sidebar | on | The panel stays reachable from the integration page when off. |
 | Low level (red) | 20% | At or below: red, counted in "to buy". |
 | Warning level (yellow) | 50% | Above low and up to this value: yellow, higher is green. |
+| Auto-fill battery type for the same model | on | Fill the type from devices of the same manufacturer and model (also for new devices). |
 | Possible replacement: level rise | 25 | A rise of at least this many points raises the "Replaced?" hint. |
 
 Changing options reloads the integration; refresh an already open panel.

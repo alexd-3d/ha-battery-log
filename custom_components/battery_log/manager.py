@@ -22,9 +22,11 @@ from homeassistant.helpers.event import async_call_later, async_track_state_chan
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_AUTOFILL_TYPES,
     CONF_LOW_THRESHOLD,
     CONF_REPLACEMENT_JUMP,
     CONF_WARN_THRESHOLD,
+    DEFAULT_AUTOFILL_TYPES,
     DEFAULT_LOW_THRESHOLD,
     DEFAULT_REPLACEMENT_JUMP,
     DEFAULT_WARN_THRESHOLD,
@@ -44,6 +46,7 @@ from .logic import (
     last_changed,
     parse_iso,
     plan_import,
+    plan_type_autofill,
     sorted_history,
     to_float,
 )
@@ -92,6 +95,10 @@ class BatteryLogManager:
         return int(self.entry.options.get(CONF_LOW_THRESHOLD, DEFAULT_LOW_THRESHOLD))
 
     @property
+    def autofill_types(self) -> bool:
+        return bool(self.entry.options.get(CONF_AUTOFILL_TYPES, DEFAULT_AUTOFILL_TYPES))
+
+    @property
     def warn_threshold(self) -> int:
         return int(self.entry.options.get(CONF_WARN_THRESHOLD, DEFAULT_WARN_THRESHOLD))
 
@@ -105,6 +112,7 @@ class BatteryLogManager:
     def async_start(self) -> None:
         """Initial scan and start watching the registries."""
         self._scan()
+        self._autofill_types()
         self._unsubs.append(
             self.hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, self._registry_event)
         )
@@ -137,6 +145,7 @@ class BatteryLogManager:
     def _rescan(self, _now: datetime | None = None) -> None:
         self._rescan_cancel = None
         self._scan()
+        self._autofill_types()
         self._sync_entities()
         self._schedule_push()
 
@@ -339,6 +348,7 @@ class BatteryLogManager:
         record = self.store.device(device_id)
         if type_ is not None:
             record["type"] = type_
+            record["type_auto"] = False
         entry = {
             "id": uuid4().hex[:12],
             "at": at.isoformat(),
@@ -363,6 +373,8 @@ class BatteryLogManager:
                 },
             )
         self._notify_device(device_id)
+        if type_ is not None:
+            self._autofill_types()
         return entry
 
     # ------------------------------------------------------- Battery Notes import
@@ -428,9 +440,14 @@ class BatteryLogManager:
     def async_set_type(self, device_id: str, type_: str | None) -> None:
         self._require_device(device_id)
         self._check_type(type_)
-        self.store.device(device_id)["type"] = type_
+        record = self.store.device(device_id)
+        record["type"] = type_
+        record["type_auto"] = False
+        record["type_locked"] = type_ is None  # an empty type chosen on purpose is not auto-filled again
         self.store.async_schedule_save()
         self._notify_device(device_id)
+        if type_ is not None:
+            self._autofill_types()
 
     @callback
     def async_add_type(self, name: str) -> None:
@@ -458,6 +475,33 @@ class BatteryLogManager:
     def _types_changed(self) -> None:
         async_dispatcher_send(self.hass, SIGNAL_TYPES_CHANGED)
         self._schedule_push()
+
+    def _model_key(self, device_id: str) -> tuple[str, str, str] | None:
+        """Manufacturer, model and model id: devices sharing them usually share the battery."""
+        device = dr.async_get(self.hass).async_get(device_id)
+        if device is None or not device.model:
+            return None
+        return (device.manufacturer or "", device.model, getattr(device, "model_id", None) or "")
+
+    @callback
+    def _autofill_types(self) -> None:
+        """Give untyped devices the type their same-model siblings already have."""
+        if not self.autofill_types:
+            return
+        devices: dict[str, dict[str, Any]] = {}
+        for device_id in self.active_ids:
+            record = self.store.get_device(device_id) or {}
+            devices[device_id] = {
+                "model_key": self._model_key(device_id),
+                "type": record.get("type") if record.get("type") in self.store.types else None,
+                "locked": bool(record.get("type_locked")),
+            }
+        for device_id, type_ in plan_type_autofill(devices).items():
+            record = self.store.device(device_id)
+            record["type"] = type_
+            record["type_auto"] = True
+            self.store.async_schedule_save()
+            self._notify_device(device_id)
 
     @callback
     def async_set_ignored(self, device_id: str, ignored: bool) -> None:
@@ -517,6 +561,7 @@ class BatteryLogManager:
                     "low": low,
                     "unavailable": unavailable,
                     "type": record.get("type"),
+                    "type_auto": bool(record.get("type_auto")),
                     "ignored": bool(record.get("ignored")),
                     "suspected": record.get("suspected"),
                     **{k: v for k, v in self.device_stats(device_id).items() if k != "last_note"},

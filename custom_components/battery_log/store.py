@@ -11,7 +11,7 @@ from .const import DEFAULT_TYPES, STORAGE_KEY, STORAGE_VERSION
 
 
 def _new_device() -> dict[str, Any]:
-    return {"type": None, "ignored": False, "history": [], "suspected": None}
+    return {"type": None, "type_auto": False, "type_locked": False, "ignored": False, "history": [], "suspected": None}
 
 
 class BatteryLogStore:

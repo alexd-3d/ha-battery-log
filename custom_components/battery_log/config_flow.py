@@ -12,10 +12,12 @@ from homeassistant.helpers import selector
 
 from .importer import battery_notes_installed
 from .const import (
+    CONF_AUTOFILL_TYPES,
     CONF_LOW_THRESHOLD,
     CONF_REPLACEMENT_JUMP,
     CONF_SHOW_IN_SIDEBAR,
     CONF_WARN_THRESHOLD,
+    DEFAULT_AUTOFILL_TYPES,
     DEFAULT_LOW_THRESHOLD,
     DEFAULT_REPLACEMENT_JUMP,
     DEFAULT_SHOW_IN_SIDEBAR,
@@ -85,6 +87,10 @@ class BatteryLogOptionsFlow(OptionsFlowWithReload):
                     CONF_WARN_THRESHOLD,
                     default=options.get(CONF_WARN_THRESHOLD, DEFAULT_WARN_THRESHOLD),
                 ): _percent(DEFAULT_WARN_THRESHOLD, 2, 100),
+                vol.Required(
+                    CONF_AUTOFILL_TYPES,
+                    default=options.get(CONF_AUTOFILL_TYPES, DEFAULT_AUTOFILL_TYPES),
+                ): bool,
                 vol.Required(
                     CONF_REPLACEMENT_JUMP,
                     default=options.get(CONF_REPLACEMENT_JUMP, DEFAULT_REPLACEMENT_JUMP),

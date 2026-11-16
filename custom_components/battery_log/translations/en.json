@@ -28,12 +28,14 @@
           "show_in_sidebar": "Show in sidebar",
           "low_threshold": "Low level (red)",
           "warn_threshold": "Warning level (yellow)",
+          "autofill_types": "Auto-fill battery type for the same model",
           "replacement_jump": "Possible replacement: level rise"
         },
         "data_description": {
           "show_in_sidebar": "The table stays reachable from this integration's page when hidden.",
           "low_threshold": "Devices at or below this level are marked Low (red) and counted in the shopping summary.",
           "warn_threshold": "Levels above Low and up to this value are yellow, higher is green. Must be above the Low level.",
+          "autofill_types": "When a device has no type and other devices of the same manufacturer and model share one, that type is filled in (also for newly found devices). A type you clear yourself is left empty.",
           "replacement_jump": "A rise of at least this many percentage points suggests the battery was replaced, and asks you to confirm."
         }
       },

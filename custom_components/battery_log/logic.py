@@ -150,3 +150,27 @@ def plan_import(
             plan["adds"].append((device_id, at, note[:500]))
     plan["unknown_types"] = sorted(unknown)
     return plan
+
+
+def plan_type_autofill(devices: dict[str, dict[str, Any]]) -> dict[str, str]:
+    """Which devices should get a battery type because same-model devices already have one.
+
+    `devices` maps device id -> {"model_key": hashable|None, "type": str|None, "locked": bool}.
+    A device is filled only when it has no type, was not cleared on purpose (`locked`),
+    and every typed device of the same model agrees on one type.
+    """
+    groups: dict[Any, list[str]] = {}
+    for device_id, info in devices.items():
+        if info.get("model_key"):
+            groups.setdefault(info["model_key"], []).append(device_id)
+    fills: dict[str, str] = {}
+    for members in groups.values():
+        types = {devices[d]["type"] for d in members if devices[d].get("type")}
+        if len(types) != 1:
+            continue
+        chosen = next(iter(types))
+        for device_id in members:
+            info = devices[device_id]
+            if not info.get("type") and not info.get("locked"):
+                fills[device_id] = chosen
+    return fills
