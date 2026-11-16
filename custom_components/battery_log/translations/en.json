@@ -1,0 +1,68 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Battery Log",
+        "description": "Battery devices are found automatically. Nothing else to configure."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Battery Log is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Battery Log options",
+        "data": {
+          "show_in_sidebar": "Show in sidebar",
+          "low_threshold": "Low battery level",
+          "replacement_jump": "Possible replacement: level rise"
+        },
+        "data_description": {
+          "show_in_sidebar": "The table stays reachable from this integration's page when hidden.",
+          "low_threshold": "Devices at or below this level are marked Low.",
+          "replacement_jump": "A rise of at least this many percentage points suggests the battery was replaced, and asks you to confirm."
+        }
+      }
+    }
+  },
+  "entity": {
+    "select": {
+      "battery_type": {"name": "Battery type"}
+    },
+    "button": {
+      "battery_changed": {"name": "Battery changed"}
+    },
+    "sensor": {
+      "battery_last_changed": {"name": "Battery last changed"}
+    }
+  },
+  "services": {
+    "change": {
+      "name": "Log battery change",
+      "description": "Records that a device battery was changed.",
+      "fields": {
+        "device_id": {"name": "Device", "description": "The battery device."},
+        "date": {"name": "Date", "description": "When it was changed (now when empty)."},
+        "note": {"name": "Note", "description": "Free text, e.g. manufacturer and where it was bought."},
+        "battery_type": {"name": "Battery type", "description": "Must exist in the type list."}
+      }
+    },
+    "set_type": {
+      "name": "Set battery type",
+      "description": "Sets the battery type of a device.",
+      "fields": {
+        "device_id": {"name": "Device", "description": "The battery device."},
+        "battery_type": {"name": "Battery type", "description": "Must exist in the type list."}
+      }
+    },
+    "add_type": {
+      "name": "Add battery type",
+      "description": "Adds a battery type to the shared list.",
+      "fields": {
+        "battery_type": {"name": "Battery type", "description": "New type name."}
+      }
+    }
+  }
+}

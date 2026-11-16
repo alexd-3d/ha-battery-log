@@ -1,0 +1,12 @@
+{
+  "entity": {
+    "select": {"battery_type": {"default": "mdi:battery-unknown"}},
+    "button": {"battery_changed": {"default": "mdi:battery-sync"}},
+    "sensor": {"battery_last_changed": {"default": "mdi:battery-clock"}}
+  },
+  "services": {
+    "change": {"service": "mdi:battery-sync"},
+    "set_type": {"service": "mdi:battery-unknown"},
+    "add_type": {"service": "mdi:battery-plus"}
+  }
+}

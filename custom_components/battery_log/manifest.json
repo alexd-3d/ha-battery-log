@@ -1,0 +1,13 @@
+{
+  "domain": "battery_log",
+  "name": "Battery Log",
+  "codeowners": ["@alexd-3d"],
+  "config_flow": true,
+  "dependencies": ["frontend", "http", "panel_custom", "websocket_api"],
+  "documentation": "https://github.com/alexd-3d/ha-battery-log",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/alexd-3d/ha-battery-log/issues",
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

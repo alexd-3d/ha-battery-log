@@ -1,0 +1,35 @@
+change:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device: {}
+    date:
+      required: false
+      selector:
+        datetime: {}
+    note:
+      required: false
+      selector:
+        text:
+          multiline: true
+    battery_type:
+      required: false
+      selector:
+        text: {}
+set_type:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device: {}
+    battery_type:
+      required: true
+      selector:
+        text: {}
+add_type:
+  fields:
+    battery_type:
+      required: true
+      selector:
+        text: {}
