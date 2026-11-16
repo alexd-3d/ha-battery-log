@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from pathlib import Path
 
@@ -10,7 +11,6 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.loader import async_get_integration
 
 from .const import (
     CONF_SHOW_IN_SIDEBAR,
@@ -34,6 +34,12 @@ _LOGGER = logging.getLogger(__name__)
 type BatteryLogConfigEntry = ConfigEntry[BatteryLogManager]
 
 _STATIC_REGISTERED = f"{DOMAIN}_static_registered"
+_FRONTEND_DIR = Path(__file__).parent / "frontend"
+
+
+def _file_digest(path: Path) -> str:
+    """Short content hash used as the cache-busting query string."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:12]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -68,16 +74,13 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
     if not hass.data.get(_STATIC_REGISTERED):
         await hass.http.async_register_static_paths(
             [
-                StaticPathConfig(
-                    STATIC_URL,
-                    str(Path(__file__).parent / "frontend"),
-                    cache_headers=False,
-                )
+                StaticPathConfig(STATIC_URL, str(_FRONTEND_DIR), cache_headers=False)
             ]
         )
         hass.data[_STATIC_REGISTERED] = True
 
-    integration = await async_get_integration(hass, DOMAIN)
+    # Cache-bust by content so a new panel file is picked up after an update.
+    digest = await hass.async_add_executor_job(_file_digest, _FRONTEND_DIR / PANEL_JS)
     show = entry.options.get(CONF_SHOW_IN_SIDEBAR, DEFAULT_SHOW_IN_SIDEBAR)
     await panel_custom.async_register_panel(
         hass,
@@ -85,7 +88,7 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
         webcomponent_name=PANEL_ELEMENT,
         sidebar_title=PANEL_TITLE if show else None,
         sidebar_icon=PANEL_ICON if show else None,
-        module_url=f"{STATIC_URL}/{PANEL_JS}?v={integration.version}",
+        module_url=f"{STATIC_URL}/{PANEL_JS}?v={digest}",
         require_admin=True,
         config_panel_domain=DOMAIN,
     )
