@@ -738,7 +738,10 @@ class BatteryLogPanel extends HTMLElement {
           } else this._dialog.close();
         } }, saveLabel || this._t("dlg_save"))
       : null;
-    this._dialog.replaceChildren(h("h2", {}, title), hint ? h("div", { class: "hint" }, hint) : null, ...fields, err, h("div", { class: "btns" }, ...extra, cancel, saveBtn));
+    // replaceChildren() turns null into the text "null", so only real nodes go in
+    this._dialog.replaceChildren(
+      ...[h("h2", {}, title), hint ? h("div", { class: "hint" }, hint) : null, ...fields, err, h("div", { class: "btns" }, ...extra, cancel, saveBtn)].filter(Boolean)
+    );
     if (!this._dialog.open) this._dialog.showModal();
   }
 

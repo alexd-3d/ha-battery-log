@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Fixed: the text "null" appeared above the fields in the Change battery dialog.
+
 ## 0.2.0
 
 First public release.
