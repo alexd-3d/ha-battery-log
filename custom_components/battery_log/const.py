@@ -13,6 +13,8 @@ STORAGE_VERSION = 1
 PANEL_URL_PATH = "battery-log"
 PANEL_ELEMENT = "battery-log-panel"
 PANEL_TITLE = "Battery Log"
+# Sidebar title per Home Assistant language (falls back to PANEL_TITLE).
+PANEL_TITLES = {"uk": "Журнал батарей"}
 PANEL_ICON = "mdi:battery-heart-variant"
 STATIC_URL = "/battery_log_static"
 PANEL_JS = "battery-log-panel.js"
