@@ -79,11 +79,16 @@ td select { min-width:130px; height:38px; }
 .warnbtn { font:inherit; font-size:13px; cursor:pointer; border:0; border-radius:10px; padding:8px 12px; background:var(--warning-color, #ffa600); color:#000; text-align:left; }
 .warnbtn.small { padding:2px 10px; margin-left:8px; border-radius:12px; }
 .actions { display:flex; gap:8px; align-items:center; }
-.hist { margin:0; padding:0; list-style:none; display:grid; gap:10px; max-width:640px; }
-.hist li { display:grid; grid-template-columns:auto 1fr auto; gap:2px 12px; align-items:center; font-size:13px; }
-.hist .when { font-weight:500; font-variant-numeric:tabular-nums; }
-.hist .meta { grid-column:1 / 3; color:var(--secondary-text-color); overflow-wrap:anywhere; }
-.hist .ibtn { width:34px; height:34px; --mdc-icon-size:18px; }
+.hist { margin:0; padding:0; list-style:none; display:grid; gap:12px; max-width:760px; }
+.hist li { display:grid; grid-template-columns:1fr auto; gap:0 8px; align-items:center; font-size:13px; }
+.hist .head { display:flex; align-items:baseline; flex-wrap:wrap; gap:2px 10px; min-width:0; font-variant-numeric:tabular-nums; }
+.hist .d { font-weight:600; color:var(--primary-text-color); }
+.hist .t { color:var(--secondary-text-color); font-weight:400; margin-left:6px; }
+.hist .span { font-size:12px; padding:0 8px; border-radius:10px; border:1px solid var(--divider-color); color:var(--secondary-text-color); white-space:nowrap; }
+.hist .meta { grid-column:1 / -1; margin-top:2px; color:var(--secondary-text-color); overflow-wrap:anywhere; line-height:1.35; }
+.hist .acts { display:flex; gap:0; }
+.hist .ibtn { width:30px; height:30px; border:0; border-radius:8px; background:transparent; color:var(--secondary-text-color); --mdc-icon-size:18px; }
+.hist .ibtn:hover { color:var(--primary-text-color); }
 tr.histrow td { background:color-mix(in srgb, var(--primary-text-color) 9%, transparent); color:var(--secondary-text-color); box-shadow:inset 3px 0 0 var(--primary-color); }
 tr.open td:first-child { box-shadow:inset 3px 0 0 var(--primary-color); }
 .dev { padding:14px; display:grid; gap:12px; border-bottom:1px solid var(--divider-color); }
@@ -94,8 +99,6 @@ tr.open td:first-child { box-shadow:inset 3px 0 0 var(--primary-color); }
 .dev-mid { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:12px; align-items:center; font-size:13px; }
 .dev-foot { display:flex; justify-content:space-between; align-items:center; gap:10px; }
 .dev .histbox { padding:10px 12px; border-radius:10px; background:color-mix(in srgb, var(--primary-text-color) 9%, transparent); color:var(--secondary-text-color); }
-.histbox .hist .when, tr.histrow .hist .when { font-weight:400; }
-.histbox .ibtn, tr.histrow .ibtn { background:transparent; }
 .sect { font-size:13px; font-weight:500; color:var(--secondary-text-color); text-transform:uppercase; letter-spacing:.04em; margin:4px 2px -4px; }
 .foot { font-size:13px; color:var(--secondary-text-color); display:flex; gap:8px; align-items:center; }
 .linkbtn { font:inherit; font-size:13px; background:none; border:0; padding:0; color:var(--primary-color); cursor:pointer; text-decoration:underline; }
@@ -392,12 +395,16 @@ class BatteryLogPanel extends HTMLElement {
     const loc = this._hass?.locale || {};
     const system = navigator.languages?.[0] || navigator.language || undefined;
     const dateLocale = { DMY: "en-GB", MDY: "en-US", YMD: "sv-SE" }[loc.date_format] || system;
-    const hour12 = loc.time_format === "am_pm" ? true : loc.time_format === "twenty_four" ? false : undefined;
     const d = new Date(iso);
     const date = new Intl.DateTimeFormat(dateLocale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
-    if (!withTime) return date;
-    const time = new Intl.DateTimeFormat(system, { hour: "2-digit", minute: "2-digit", hour12 }).format(d);
-    return `${date}, ${time}`;
+    return withTime ? `${date}, ${this._fmtTime(iso)}` : date;
+  }
+
+  _fmtTime(iso) {
+    const loc = this._hass?.locale || {};
+    const system = navigator.languages?.[0] || navigator.language || undefined;
+    const hour12 = loc.time_format === "am_pm" ? true : loc.time_format === "twenty_four" ? false : undefined;
+    return new Intl.DateTimeFormat(system, { hour: "2-digit", minute: "2-digit", hour12 }).format(new Date(iso));
   }
 
   _daysAgo(iso) {
@@ -496,17 +503,36 @@ class BatteryLogPanel extends HTMLElement {
     return h(
       "ul",
       { class: "hist" },
-      d.history.map((e) =>
-        h(
+      d.history.map((e, i) => {
+        // history is newest first: the next item is the previous (older) change
+        const prev = d.history[i + 1];
+        const span = prev ? this._span(prev.at, e.at) : null;
+        const meta = [e.type, e.note].filter(Boolean).join(" · ");
+        return h(
           "li",
           {},
-          h("span", { class: "when" }, this._fmtDate(e.at, true)),
-          h("span", {}),
-          h("span", { class: "actions" }, this._ibtn("mdi:pencil", "✎", "Edit", () => this._openEdit(d, e)), this._ibtn("mdi:delete", "🗑", "Delete", () => this._confirmDelete(d, e))),
-          [e.type, e.note].filter(Boolean).length ? h("span", { class: "meta" }, [e.type, e.note].filter(Boolean).join(" · ")) : null
-        )
-      )
+          h(
+            "div",
+            { class: "head" },
+            h("span", {}, h("span", { class: "d" }, this._fmtDate(e.at)), h("span", { class: "t" }, this._fmtTime(e.at))),
+            span ? h("span", { class: "span", title: `${span.long} since the previous change` }, span.short) : null
+          ),
+          h("div", { class: "acts" }, this._ibtn("mdi:pencil", "✎", "Edit", () => this._openEdit(d, e)), this._ibtn("mdi:delete", "🗑", "Delete", () => this._confirmDelete(d, e))),
+          meta ? h("div", { class: "meta" }, meta) : null
+        );
+      })
     );
+  }
+
+  /** Distance between two ISO dates: days when short, months otherwise. */
+  _span(fromIso, toIso) {
+    const days = Math.max(0, (Date.parse(toIso) - Date.parse(fromIso)) / 86400000);
+    if (days < 60) {
+      const n = Math.round(days);
+      return { short: `${n} d`, long: `${n} day${n === 1 ? "" : "s"}` };
+    }
+    const months = (days / 30.44).toFixed(1);
+    return { short: `${months} mo`, long: `${months} months` };
   }
 
   _toggleHistory(id) {
