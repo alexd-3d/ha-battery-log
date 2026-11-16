@@ -17,15 +17,20 @@
 [![Додати в HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=alexd-3d&repository=ha-battery-log&category=integration)
 
 <p>
-  <img src="docs/mobile-list-uk.jpg" width="260" alt="Список пристроїв на телефоні">
-  <img src="docs/mobile-history.jpg" width="260" alt="Історія замін з інтервалами">
-  <img src="docs/dialog-confirm.jpg" width="260" alt="Підтвердження можливої заміни">
+  <img src="images/mobile-list-uk.jpg" width="250" alt="Список пристроїв на телефоні">
+  <img src="images/mobile-history.jpg" width="250" alt="Історія замін з інтервалами">
+  <img src="images/tracked-devices.jpg" width="250" alt="Відстежувані й ігноровані пристрої">
 </p>
 
-![Таблиця на широкому екрані](docs/desktop-table.jpg)
+![Таблиця на широкому екрані](images/desktop-table.jpg)
 
-Знімки екрана зроблено на вигаданих демо-даних. Частина знімків англійською:
-мова панелі береться з вашого профілю Home Assistant.
+<p>
+  <img src="images/dialog-confirm.jpg" width="250" alt="Підтвердження можливої заміни">
+</p>
+
+<sub>На знімках справжні пристрої автора (одну назву кімнати й одну сиру адресу
+пристрою замасковано). Діалог «Замінено?» зроблено на демо-даних. Частина
+знімків англійською: мова панелі береться з вашого профілю Home Assistant.</sub>
 
 ## Можливості
 

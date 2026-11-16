@@ -17,12 +17,20 @@ devices by itself.
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=alexd-3d&repository=ha-battery-log&category=integration)
 
 <p>
-  <img src="docs/mobile-list.jpg" width="260" alt="Device list on a phone">
-  <img src="docs/mobile-history.jpg" width="260" alt="Change history with intervals">
-  <img src="docs/dialog-confirm.jpg" width="260" alt="Confirming a possible replacement">
+  <img src="images/mobile-list.jpg" width="250" alt="Device list on a phone">
+  <img src="images/mobile-history.jpg" width="250" alt="Change history with intervals">
+  <img src="images/tracked-devices.jpg" width="250" alt="Tracked and ignored devices">
 </p>
 
-![Table on a wide screen](docs/desktop-table.jpg)
+![Table on a wide screen](images/desktop-table.jpg)
+
+<p>
+  <img src="images/dialog-confirm.jpg" width="250" alt="Confirming a possible replacement">
+  <img src="images/mobile-list-uk.jpg" width="250" alt="The same list in Ukrainian">
+</p>
+
+<sub>Screenshots show the author's real devices (one room name and one raw device
+address are masked). The "Replaced?" dialog uses demo data.</sub>
 
 ## Features
 
