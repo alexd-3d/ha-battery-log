@@ -87,3 +87,10 @@ def test_toggles():
 def test_note_is_limited_to_500_characters():
     result = plan({"d1": {"type": "CR2032", "last_replaced": dt(10), "note": "x" * 900}})
     assert len(result["adds"][0][2]) == 500
+
+
+def test_only_ignored_entries_do_not_count_as_installed():
+    assert logic.has_active_entry(["user", "ignore"])
+    assert logic.has_active_entry(["user"])
+    assert not logic.has_active_entry(["ignore", "ignore"])
+    assert not logic.has_active_entry([])

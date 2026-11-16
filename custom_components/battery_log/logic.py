@@ -94,6 +94,11 @@ def match_type(name: str | None, known: list[str]) -> str | None:
     return None
 
 
+def has_active_entry(sources: list[str]) -> bool:
+    """True when at least one config entry is a real one (not an ignored discovery)."""
+    return any(source != "ignore" for source in sources)
+
+
 def plan_import(
     collected: dict[str, dict[str, Any]],
     known_types: list[str],

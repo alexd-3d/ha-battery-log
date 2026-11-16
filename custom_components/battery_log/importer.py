@@ -8,12 +8,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from .const import BATTERY_NOTES_DOMAIN
-from .logic import parse_iso
+from .logic import has_active_entry, parse_iso
 
 
 def battery_notes_installed(hass: HomeAssistant) -> bool:
-    """True when Battery Notes has a config entry in this Home Assistant."""
-    return bool(hass.config_entries.async_entries(BATTERY_NOTES_DOMAIN))
+    """True when Battery Notes is actually set up (ignored discovery entries do not count)."""
+    return has_active_entry([entry.source for entry in hass.config_entries.async_entries(BATTERY_NOTES_DOMAIN)])
 
 
 def collect_battery_notes(hass: HomeAssistant) -> dict[str, dict[str, Any]]:
