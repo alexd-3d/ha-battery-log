@@ -18,7 +18,7 @@ from homeassistant.helpers import (
     entity_registry as er,
 )
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.event import async_call_later, async_track_state_change_event
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event, async_track_time_interval
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -45,12 +45,16 @@ from .logic import (
     candidate_note,
     detect_level_jump,
     detect_low_cleared,
+    hint_allowed,
+    hint_returned,
     last_changed,
     parse_iso,
     plan_import,
     plan_type_autofill,
+    SNOOZE_SECONDS,
     sorted_history,
     to_float,
+    update_peak,
 )
 from .importer import collect_battery_notes
 from .store import BatteryLogStore
@@ -115,6 +119,10 @@ class BatteryLogManager:
         """Initial scan and start watching the registries."""
         self._scan()
         self._autofill_types()
+        self._start_watching()
+        self._unsubs.append(
+            async_track_time_interval(self.hass, self._periodic_check, timedelta(minutes=30))
+        )
         self._unsubs.append(
             self.hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, self._registry_event)
         )
@@ -246,14 +254,55 @@ class BatteryLogManager:
         self._schedule_push()
         if device_id not in self.active_ids:
             return
+        record = self.store.device(device_id)
+        now = dt_util.utcnow().timestamp()
+        record.setdefault("observed_since", now)
+        peak_before = None
         if entity_id.startswith("binary_sensor."):
             triggered = detect_low_cleared(old.state, new.state)
             previous = current = None
         else:
             previous, current = to_float(old.state), to_float(new.state)
             triggered = detect_level_jump(previous, current, self.replacement_jump)
-        if triggered:
+            if current is not None:
+                old_peak = record.get("peak")
+                record["peak"], peak_before = update_peak(old_peak, current, now)
+                if record["peak"] is not old_peak:
+                    self.store.async_schedule_save()
+                self._drop_returned_hint(device_id, current)
+        if triggered and hint_allowed(record.get("observed_since"), now, record.get("hint_snooze_until"), current, peak_before):
             self._mark_suspected(device_id, previous, current)
+
+    @callback
+    def _start_watching(self) -> None:
+        """Start the learning clock of every device that has none yet."""
+        now = dt_util.utcnow().timestamp()
+        changed = False
+        for device_id in self.active_ids:
+            record = self.store.device(device_id)
+            if "observed_since" not in record:
+                record["observed_since"] = now
+                changed = True
+        if changed:
+            self.store.async_schedule_save()
+
+    @callback
+    def _drop_returned_hint(self, device_id: str, level: float | None) -> None:
+        """A pending hint goes away when the level is back where it started (a blip)."""
+        record = self.store.get_device(device_id)
+        if record and record.get("suspected") and hint_returned(record["suspected"], level):
+            record["suspected"] = None
+            self.store.async_schedule_save()
+            self._notify_device(device_id)
+
+    @callback
+    def _periodic_check(self, _now: datetime | None = None) -> None:
+        """Drop hints whose level fell back while no new state event arrived."""
+        for device_id, source in self.scanned.items():
+            record = self.store.get_device(device_id)
+            if record and record.get("suspected") and source.level_entity:
+                state = self.hass.states.get(source.level_entity)
+                self._drop_returned_hint(device_id, to_float(state.state) if state else None)
 
     @callback
     def _mark_suspected(self, device_id: str, previous: float | None, current: float | None) -> None:
@@ -570,7 +619,10 @@ class BatteryLogManager:
     @callback
     def async_dismiss_suspected(self, device_id: str) -> None:
         self._require_device(device_id)
-        self.store.device(device_id)["suspected"] = None
+        record = self.store.device(device_id)
+        record["suspected"] = None
+        # "Not replaced" is remembered: no new hint for this device for two weeks
+        record["hint_snooze_until"] = dt_util.utcnow().timestamp() + SNOOZE_SECONDS
         self.store.async_schedule_save()
         self._notify_device(device_id)
 

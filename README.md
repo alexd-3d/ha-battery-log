@@ -53,7 +53,10 @@ the tracked and ignored devices screen.</sub>
 - **"Replaced?" hint.** When a battery level jumps up (default 25 points), or a
   "battery low" flag clears, the row gets a badge. Tap it to confirm: the date
   is pre-filled with when the jump was seen and you can edit it, add notes, or
-  answer "Not replaced". Nothing is logged without your confirmation.
+  answer "Not replaced". Nothing is logged without your confirmation. A hint is raised only
+  for a level that was not seen in the last 14 days, so sensors that flap between a few
+  values do not nag; "Not replaced" keeps that device quiet for 14 days, and a hint
+  disappears by itself when the level falls back.
 - **Auto-fill by model.** When you set a battery type, other devices of the same manufacturer
   and model that have none get it too, and so does a newly found device. Conflicting
   types are never guessed, a type you clear yourself stays empty, and the panel marks
@@ -274,8 +277,9 @@ They can be combined: Battery Log only needs a battery sensor from any integrati
 
 - The panel requires an administrator account.
 - Battery levels from some devices jump around (Zigbee sensors that report in
-  coarse steps). Those can produce "Replaced?" hints that you can dismiss with
-  **Not replaced**.
+  coarse steps, often 50, 75 and 100 in turn). A "Replaced?" hint needs a level higher than
+  anything seen in the last 14 days, a device is only watched for hints after its first
+  3 days, and **Not replaced** silences that device for 14 days.
 - A device without any battery sensor in Home Assistant is not discovered.
 - Removing the integration leaves `.storage/battery_log` in place so your
   history survives a reinstall. Delete the file if you want it gone.

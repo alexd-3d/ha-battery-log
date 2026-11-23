@@ -269,3 +269,53 @@ def format_errors(errors: list[dict[str, str]]) -> str:
     ]
     more = len(errors) - MAX_ERRORS_SHOWN
     return " | ".join(shown) + (f" | (+{more} more, see the Home Assistant log)" if more > 0 else "")
+
+
+# ---------------------------------------------------------------------------
+# Live "Replaced?" hint: do not raise it for sensors that just flap
+# ---------------------------------------------------------------------------
+PEAK_WINDOW_SECONDS = 14 * SECONDS_PER_DAY  # a level seen in the last two weeks is not "new"
+LEARNING_SECONDS = 3 * SECONDS_PER_DAY  # no hints until a device has been watched this long
+SNOOZE_SECONDS = 14 * SECONDS_PER_DAY  # quiet period after "Not replaced"
+RETURN_TOLERANCE = 5  # a hint is dropped when the level is back within this of where it started
+HIGH_TOLERANCE = 1.0
+
+
+def update_peak(peak: dict[str, float] | None, level: float, now: float) -> tuple[dict[str, float], float | None]:
+    """Track the highest level seen in the last 14 days.
+
+    Returns (new_peak, peak_before): `peak_before` is the highest level seen in that window
+    before this reading, or None when there is none (nothing stored, or it has expired).
+    """
+    before = peak["level"] if peak and now - peak["at"] <= PEAK_WINDOW_SECONDS else None
+    if before is None or level >= before:
+        return {"level": level, "at": now}, before
+    return peak, before  # type: ignore[return-value]
+
+
+def hint_allowed(
+    observed_since: float | None,
+    now: float,
+    snooze_until: float | None,
+    level: float | None,
+    peak_before: float | None,
+) -> bool:
+    """May a replacement hint be raised now?
+
+    Not while the device is still being learned, not while the hint is snoozed after a
+    dismissal, and (for numeric levels) only when the level is higher than anything seen in
+    the last two weeks. A flapping sensor keeps touching its top value, so it never counts.
+    """
+    if observed_since is None or now - observed_since < LEARNING_SECONDS:
+        return False
+    if snooze_until is not None and now < snooze_until:
+        return False
+    if level is None or peak_before is None:
+        return True
+    return level > peak_before + HIGH_TOLERANCE
+
+
+def hint_returned(suspected: dict[str, Any] | None, level: float | None) -> bool:
+    """True when a pending hint was only a blip: the level is back where it started."""
+    start = (suspected or {}).get("from")
+    return start is not None and level is not None and level <= start + RETURN_TOLERANCE
