@@ -110,6 +110,18 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
             lambda m, msg: m.async_set_ignored(msg["device_id"], msg["ignored"]),
         ),
         _command(
+            {vol.Required("type"): "battery_log/accept_candidate", vol.Required("candidate_id"): cv.string},
+            lambda m, msg: m.async_accept_candidate(msg["candidate_id"]),
+        ),
+        _command(
+            {vol.Required("type"): "battery_log/dismiss_candidate", vol.Required("candidate_id"): cv.string},
+            lambda m, msg: m.async_dismiss_candidate(msg["candidate_id"]),
+        ),
+        _command(
+            {vol.Required("type"): "battery_log/dismiss_candidates"},
+            lambda m, msg: m.async_dismiss_candidates(),
+        ),
+        _command(
             {vol.Required("type"): "battery_log/dismiss_suspected", **_DEVICE},
             lambda m, msg: m.async_dismiss_suspected(msg["device_id"]),
         ),

@@ -19,7 +19,8 @@
         "title": "Battery Log",
         "menu_options": {
           "settings": "Settings",
-          "import_battery_notes": "Import from Battery Notes"
+          "import_battery_notes": "Import from Battery Notes",
+          "detect_history": "Detect past replacements"
         }
       },
       "settings": {
@@ -50,11 +51,28 @@
           "import_types": "Only for devices that have no type yet, and only for types that exist in your list.",
           "import_dates": "Adds one history entry per device with the note \"Imported from Battery Notes\". Battery Notes may hold the day you started tracking rather than a real replacement, so check the dates afterwards."
         }
+      },
+      "detect_history": {
+        "title": "Detect past replacements",
+        "description": "Looks at the battery level history Home Assistant has kept and finds moments when a battery was most likely replaced (a lasting jump back to full). Run it once, ideally right after setting up.\n\nConfident findings are added to the history with the note \"Detected from battery history\". Less certain ones wait in the panel with an Add button for you to decide. Devices that already have entries you made yourself are left alone, nothing is ever overwritten, and Home Assistant does not break if something fails: you get a report with the counts and the error.",
+        "data": {
+          "dry_run": "Preview only",
+          "add_confident": "Add confident findings automatically",
+          "add_first_seen": "Add the first-seen date for devices without any entry"
+        },
+        "data_description": {
+          "dry_run": "Counts what would happen and stores nothing. The scan is not marked as done, so you can run it again.",
+          "add_confident": "When off, every finding waits in the panel for you.",
+          "add_first_seen": "The date the device first reported a level, noted as \"First seen on the network\"."
+        }
       }
     },
     "abort": {
       "imported": "Done. Added {new_entries} history entr(ies) and set {type_updates} battery type(s). Skipped {already} that already existed. Types not in your list: {unknown_types}.",
-      "nothing_to_import": "Nothing to import: {already} date(s) are already in the history and no new types were found. Types not in your list: {unknown_types}."
+      "nothing_to_import": "Nothing to import: {already} date(s) are already in the history and no new types were found. Types not in your list: {unknown_types}.",
+      "history_done": "{preview}Finished without errors. Devices checked: {checked}. Replacements added: {added}. First-seen dates added: {first_seen}. Waiting for your decision in the panel: {review}. Skipped, you made entries yourself: {skipped_manual}. No statistics: {no_stats}. Already known: {already}.",
+      "history_partial": "{preview}Finished with {error_count} problem(s), the rest was done. Devices checked: {checked}. Replacements added: {added}. First-seen dates added: {first_seen}. Waiting in the panel: {review}. Skipped, you made entries yourself: {skipped_manual}. No statistics: {no_stats}. Already known: {already}. Problems: {errors}",
+      "history_failed": "{preview}Stopped early. Devices checked before the stop: {checked}. Replacements added: {added}. First-seen dates added: {first_seen}. Waiting in the panel: {review}. Skipped: {skipped_manual}. No statistics: {no_stats}. Problems ({error_count}): {errors}. Nothing was broken; you can run this again."
     }
   },
   "entity": {

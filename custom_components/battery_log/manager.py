@@ -36,11 +36,13 @@ from .const import (
     MAX_NOTE_LENGTH,
     MAX_TYPE_LENGTH,
     SIGNAL_TYPES_CHANGED,
+    SOURCE_DETECT,
     SOURCE_IMPORT,
     signal_device,
 )
 from .logic import (
     average_lifetime_days,
+    candidate_note,
     detect_level_jump,
     detect_low_cleared,
     last_changed,
@@ -271,7 +273,7 @@ class BatteryLogManager:
             EVENT_REPLACEMENT_SUSPECTED,
             {
                 "device_id": device_id,
-                "device_name": self._device_name(device_id),
+                "device_name": self.device_name(device_id),
                 "from_level": previous,
                 "to_level": current,
             },
@@ -365,7 +367,7 @@ class BatteryLogManager:
                 EVENT_CHANGED,
                 {
                     "device_id": device_id,
-                    "device_name": self._device_name(device_id),
+                    "device_name": self.device_name(device_id),
                     "changed_at": entry["at"],
                     "note": note,
                     "battery_type": entry["type"],
@@ -376,6 +378,60 @@ class BatteryLogManager:
         if type_ is not None:
             self._autofill_types()
         return entry
+
+    # ---------------------------------------------------- past replacement detection
+
+    @callback
+    def async_refresh_panel(self) -> None:
+        """Tell open panels that something changed that is not tied to one device."""
+        self._schedule_push()
+
+    def add_detected_entry(self, device_id: str, timestamp: float, note: str) -> dict[str, Any]:
+        """Add a history entry found by the detection (no event, keeps pending hints)."""
+        at = datetime.fromtimestamp(timestamp, tz=dt_util.UTC)
+        return self.async_log_change(device_id, at=at, note=note, source=SOURCE_DETECT, historic=True)
+
+    def add_candidate(self, device_id: str, item: dict[str, Any]) -> dict[str, Any]:
+        """Keep a less certain detection for the user to accept or dismiss."""
+        candidate = {
+            "id": uuid4().hex[:12],
+            "device_id": device_id,
+            "at": item["at"],
+            "before": item["before"],
+            "after": item["after"],
+            "confidence": item["confidence"],
+            "gap_days": item.get("gap_days", 0),
+        }
+        self.store.candidates.append(candidate)
+        self.store.async_schedule_save()
+        self._schedule_push()
+        return candidate
+
+    def _find_candidate(self, candidate_id: str) -> dict[str, Any]:
+        for candidate in self.store.candidates:
+            if candidate.get("id") == candidate_id:
+                return candidate
+        raise HomeAssistantError("Candidate not found")
+
+    @callback
+    def async_accept_candidate(self, candidate_id: str) -> None:
+        candidate = self._find_candidate(candidate_id)
+        self.add_detected_entry(candidate["device_id"], candidate["at"], candidate_note(candidate))
+        self.store.candidates.remove(candidate)
+        self.store.async_schedule_save()
+        self._schedule_push()
+
+    @callback
+    def async_dismiss_candidate(self, candidate_id: str) -> None:
+        self.store.candidates.remove(self._find_candidate(candidate_id))
+        self.store.async_schedule_save()
+        self._schedule_push()
+
+    @callback
+    def async_dismiss_candidates(self) -> None:
+        self.store.candidates.clear()
+        self.store.async_schedule_save()
+        self._schedule_push()
 
     # ------------------------------------------------------- Battery Notes import
 
@@ -520,7 +576,7 @@ class BatteryLogManager:
 
     # ---------------------------------------------------------------- read side
 
-    def _device_name(self, device_id: str) -> str:
+    def device_name(self, device_id: str) -> str:
         device = dr.async_get(self.hass).async_get(device_id)
         if device is None:
             return device_id
@@ -568,10 +624,26 @@ class BatteryLogManager:
                     "history": list(reversed(history)),
                 }
             )
+        names = {d["device_id"]: d["name"] for d in devices}
+        candidates = [
+            {
+                "id": c["id"],
+                "device_id": c["device_id"],
+                "name": names[c["device_id"]],
+                "at": datetime.fromtimestamp(c["at"], tz=dt_util.UTC).isoformat(),
+                "before": c.get("before"),
+                "after": c.get("after"),
+                "confidence": c.get("confidence", "medium"),
+                "gap_days": c.get("gap_days", 0),
+            }
+            for c in self.store.candidates
+            if c.get("device_id") in names
+        ]
         return {
             "types": list(self.store.types),
             "low_threshold": self.low_threshold,
             "warn_threshold": self.warn_threshold,
+            "candidates": sorted(candidates, key=lambda c: (c["name"].casefold(), c["at"])),
             "devices": devices,
         }
 

@@ -174,3 +174,98 @@ def plan_type_autofill(devices: dict[str, dict[str, Any]]) -> dict[str, str]:
             if not info.get("type") and not info.get("locked"):
                 fills[device_id] = chosen
     return fills
+
+
+# ---------------------------------------------------------------------------
+# Past replacement detection from long-term statistics
+# ---------------------------------------------------------------------------
+BEFORE_POINTS = 48  # hourly samples looked at before a candidate
+AFTER_POINTS = 72  # and after it
+MIN_BEFORE_POINTS = 6
+MIN_AFTER_POINTS = 12
+STEADY_POINTS = 24  # the first day after the jump must stay high
+COOLDOWN_POINTS = 72  # one event per three days
+GAP_SECONDS = 7 * SECONDS_PER_DAY  # silence this long before the jump points to a dead battery
+DUPLICATE_SECONDS = 3 * SECONDS_PER_DAY  # skip a candidate near an existing history entry
+
+
+def _median(values: list[float]) -> float:
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    return ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
+
+
+def detect_replacements(
+    rows: list[tuple[float, float]],
+    existing: list[float] | None = None,
+) -> list[dict[str, Any]]:
+    """Find likely battery replacements in an hourly level series.
+
+    `rows` are (timestamp, level %) in ascending order, one per hour with data.
+    A candidate is a sustained jump: the level before (median of 48 samples) is clearly
+    lower than the level after (median of 72), and the first day after the jump stays high,
+    so single-hour blips are ignored. `existing` holds timestamps already in the history;
+    candidates within three days of one are dropped.
+
+    confidence "high": rise of 30 points or more to at least 85%, or a medium one that
+    follows at least a week without data (the battery died). "medium": a rise of 15 to 29
+    points to 90% or more after a low period (typical for noisy sensors).
+    """
+    existing = existing or []
+    found: list[dict[str, Any]] = []
+    n = len(rows)
+    levels = [level for _, level in rows]
+    i = MIN_BEFORE_POINTS
+    while i <= n - MIN_AFTER_POINTS:
+        before = levels[max(0, i - BEFORE_POINTS) : i]
+        after = levels[i : i + AFTER_POINTS]
+        median_before, median_after = _median(before), _median(after)
+        rise = median_after - median_before
+        steady = min(after[:STEADY_POINTS])
+        confidence = None
+        if rise >= 30 and median_after >= 85 and steady >= 80:
+            confidence = "high"
+        elif 15 <= rise < 30 and median_after >= 90 and steady >= 90 and min(before) <= 50:
+            confidence = "medium"
+        if confidence is None:
+            i += 1
+            continue
+        at = rows[i][0]
+        gap = at - rows[i - 1][0]
+        if confidence == "medium" and gap >= GAP_SECONDS:
+            confidence = "high"
+        if not any(abs(at - t) < DUPLICATE_SECONDS for t in existing):
+            found.append(
+                {
+                    "at": at,
+                    "before": round(median_before),
+                    "after": round(median_after),
+                    "confidence": confidence,
+                    "gap_days": round(gap / SECONDS_PER_DAY) if gap >= GAP_SECONDS else 0,
+                }
+            )
+        i += COOLDOWN_POINTS
+    return found
+
+
+def candidate_note(item: dict[str, Any]) -> str:
+    """History note for a detected replacement."""
+    note = f"Detected from battery history: {item['before']}% to {item['after']}%"
+    if item.get("gap_days"):
+        note += f" (after {item['gap_days']} days without data)"
+    return note
+
+
+MAX_ERRORS_SHOWN = 4
+
+
+def format_errors(errors: list[dict[str, str]]) -> str:
+    """Compact text for the result screen (and for a screenshot)."""
+    if not errors:
+        return "-"
+    shown = [
+        f"{e['code']} {e['device'] or '-'}: {e['type']}: {e['detail']}".rstrip(": ")
+        for e in errors[:MAX_ERRORS_SHOWN]
+    ]
+    more = len(errors) - MAX_ERRORS_SHOWN
+    return " | ".join(shown) + (f" | (+{more} more, see the Home Assistant log)" if more > 0 else "")

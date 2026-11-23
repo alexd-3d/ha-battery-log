@@ -54,6 +54,9 @@ SOURCE_BUTTON = "button"
 SOURCE_PANEL = "panel"
 SOURCE_SERVICE = "service"
 SOURCE_IMPORT = "import"
+SOURCE_DETECT = "detect"
+# entries made by a person (or an automation): detection leaves such devices alone
+MANUAL_SOURCES = {"button", "panel", "service"}
 BATTERY_NOTES_DOMAIN = "battery_notes"
 
 

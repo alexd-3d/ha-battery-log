@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+
+- New: **Detect past replacements** in the Configure menu. It reads the long-term
+  statistics, adds confident replacements and first-seen dates, keeps uncertain ones in
+  the panel with an Add button, skips devices with entries you made yourself, has a
+  preview mode and always ends with a report with counts and an error code if
+  something went wrong. Can be used once.
+
 ## 0.4.0
 
 - New: battery type is auto-filled for devices of the same manufacturer and model

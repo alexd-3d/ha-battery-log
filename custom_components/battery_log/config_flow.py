@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFl
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
+from .detector import async_detect_history, format_errors
 from .importer import battery_notes_installed
 from .const import (
     CONF_AUTOFILL_TYPES,
@@ -61,9 +62,16 @@ class BatteryLogOptionsFlow(OptionsFlowWithReload):
         return getattr(self.config_entry, "runtime_data", None)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        if self._manager() is not None and battery_notes_installed(self.hass):
-            return self.async_show_menu(step_id="init", menu_options=["settings", "import_battery_notes"])
-        return await self.async_step_settings()
+        manager = self._manager()
+        options = ["settings"]
+        if manager is not None:
+            if battery_notes_installed(self.hass):
+                options.append("import_battery_notes")
+            if not manager.store.meta.get("history_scan_done"):
+                options.append("detect_history")
+        if len(options) == 1:
+            return await self.async_step_settings()
+        return self.async_show_menu(step_id="init", menu_options=options)
 
     async def async_step_settings(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
@@ -134,3 +142,51 @@ class BatteryLogOptionsFlow(OptionsFlowWithReload):
             data_schema=schema,
             description_placeholders=self._placeholders(plan),
         )
+
+    @staticmethod
+    def _history_placeholders(result: dict[str, Any]) -> dict[str, str]:
+        errors = result.get("errors", [])
+        return {
+            "preview": "PREVIEW ONLY, nothing was stored. " if result.get("dry_run") else "",
+            "checked": str(result.get("checked", 0)),
+            "added": str(result.get("added", 0)),
+            "first_seen": str(result.get("first_seen", 0)),
+            "review": str(result.get("review", 0)),
+            "skipped_manual": str(result.get("skipped_manual", 0)),
+            "no_stats": str(result.get("no_stats", 0)),
+            "already": str(result.get("already", 0)),
+            "error_count": str(len(errors)),
+            "errors": format_errors(errors),
+        }
+
+    async def async_step_detect_history(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """One-time scan of the statistics. Whatever happens, the flow ends with a report."""
+        manager = self._manager()
+        if manager is None:
+            result: dict[str, Any] = {
+                "errors": [{"code": "BL-D00", "device": "", "type": "NotLoaded", "detail": "Battery Log is not loaded"}],
+                "fatal": True,
+            }
+            return self.async_abort(reason="history_failed", description_placeholders=self._history_placeholders(result))
+        if user_input is None:
+            schema = vol.Schema(
+                {
+                    vol.Required("dry_run", default=False): bool,
+                    vol.Required("add_confident", default=True): bool,
+                    vol.Required("add_first_seen", default=True): bool,
+                }
+            )
+            return self.async_show_form(step_id="detect_history", data_schema=schema)
+        result = await async_detect_history(
+            manager,
+            dry_run=bool(user_input.get("dry_run")),
+            add_confident=bool(user_input.get("add_confident", True)),
+            add_first_seen=bool(user_input.get("add_first_seen", True)),
+        )
+        if result.get("fatal"):
+            reason = "history_failed"
+        elif result.get("errors"):
+            reason = "history_partial"
+        else:
+            reason = "history_done"
+        return self.async_abort(reason=reason, description_placeholders=self._history_placeholders(result))

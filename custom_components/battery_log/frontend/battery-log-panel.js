@@ -20,7 +20,10 @@ const I18N = {
     never: "never", never_changed: "never changed", no_changes: "no changes logged",
     changes_n_one: "{n} change", changes_n_other: "{n} changes", avg: "avg {v}",
     today: "today", days_ago: "{n} d ago", days_short: "{n} d", months_short: "{v} mo", span_title: "{v} since the previous change",
-    auto_filled: "type auto-filled from the same model", pill_low: "Low", pill_offline: "offline", type_ph: "— type —", none_opt: "— not set —", add_type_opt: "＋ Add new type…",
+    auto_filled: "type auto-filled from the same model", pill_low: "Low",
+    cand_title: "Possible past replacements ({n})", cand_hint: "Found in the battery history. Add the ones that are right.",
+    cand_add: "Add", cand_dismiss: "Dismiss", cand_dismiss_all: "Dismiss all", cand_levels: "{a}% to {b}%",
+    cand_high: "likely", cand_medium: "uncertain", cand_gap: "after {n} days without data", pill_offline: "offline", type_ph: "— type —", none_opt: "— not set —", add_type_opt: "＋ Add new type…",
     replaced_q: "Replaced?", confirm_title: "Confirm date and note", replaced_tap: "Replaced? Tap to confirm date and note",
     btn_change: "Change battery", btn_history: "History", btn_edit: "Edit", btn_delete: "Delete",
     manage_hint: "Every device with a battery sensor is found automatically. Switch a device off to stop tracking it: it loses its Battery Log entities and disappears from the table. History is kept.",
@@ -48,7 +51,10 @@ const I18N = {
     never: "ніколи", never_changed: "не змінювалась", no_changes: "замін не записано",
     changes_n_one: "{n} заміна", changes_n_few: "{n} заміни", changes_n_many: "{n} замін", changes_n_other: "{n} замін", avg: "сер. {v}",
     today: "сьогодні", days_ago: "{n} дн. тому", days_short: "{n} дн.", months_short: "{v} міс.", span_title: "{v} від попередньої заміни",
-    auto_filled: "тип підставлено за такою ж моделлю", pill_low: "Низький", pill_offline: "не в мережі", type_ph: "— тип —", none_opt: "— не вказано —", add_type_opt: "＋ Додати новий тип…",
+    auto_filled: "тип підставлено за такою ж моделлю", pill_low: "Низький",
+    cand_title: "Можливі минулі заміни ({n})", cand_hint: "Знайдено в історії рівня батареї. Додайте ті, що правильні.",
+    cand_add: "Додати", cand_dismiss: "Відхилити", cand_dismiss_all: "Відхилити всі", cand_levels: "{a}% до {b}%",
+    cand_high: "ймовірно", cand_medium: "невпевнено", cand_gap: "після {n} дн. без даних", pill_offline: "не в мережі", type_ph: "— тип —", none_opt: "— не вказано —", add_type_opt: "＋ Додати новий тип…",
     replaced_q: "Замінено?", confirm_title: "Підтвердіть дату й нотатку", replaced_tap: "Замінено? Торкніться, щоб підтвердити дату й нотатку",
     btn_change: "Замінити батарею", btn_history: "Історія", btn_edit: "Змінити", btn_delete: "Видалити",
     manage_hint: "Усі пристрої з датчиком батареї знаходяться автоматично. Вимкніть пристрій, щоб припинити його відстеження: його сутності Battery Log буде видалено, а з таблиці він зникне. Історію буде збережено.",
@@ -156,6 +162,12 @@ tr.open td:first-child { box-shadow:inset 3px 0 0 var(--primary-color); }
 .dev-top > :first-child { min-width:0; }
 .dev-mid { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:12px; align-items:center; font-size:13px; }
 .dev-foot { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.cands { padding:14px; display:grid; gap:12px; }
+.cands .chead { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.cands .ctitle { font-weight:500; }
+.cand { display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:4px 12px; align-items:center; padding-top:10px; border-top:1px solid var(--divider-color); }
+.cand .cinfo { font-size:13px; color:var(--secondary-text-color); overflow-wrap:anywhere; }
+.cand .acts { display:flex; gap:8px; }
 .dev .histbox { padding:10px 12px; border-radius:10px; background:color-mix(in srgb, var(--primary-text-color) 9%, transparent); color:var(--secondary-text-color); }
 .sect { font-size:13px; font-weight:500; color:var(--secondary-text-color); text-transform:uppercase; letter-spacing:.04em; margin:4px 2px -4px; }
 .foot { font-size:13px; color:var(--secondary-text-color); display:flex; gap:8px; align-items:center; }
@@ -332,6 +344,7 @@ class BatteryLogPanel extends HTMLElement {
     );
     this._stats = h("div", { class: "stats" });
     this._buy = h("div", { class: "buy" });
+    this._cands = h("div", { class: "cands card", hidden: true });
     this._tableHost = h("div", { class: "card" }, h("div", { class: "empty" }));
     this._ignoredNote = h("div", { class: "foot", hidden: true });
     this._tableView = h(
@@ -339,6 +352,7 @@ class BatteryLogPanel extends HTMLElement {
       { class: "wrap" },
       this._stats,
       this._buy,
+      this._cands,
       h("div", { class: "filters" }, h("div", { class: "row1" }, this._search, h("div", { class: "sortctl" }, this._sortSel, this._sortDir)), h("div", { class: "row3" }, this._typeSel, this._areaSel, this._statusSel)),
       this._tableHost,
       this._ignoredNote
@@ -458,6 +472,7 @@ class BatteryLogPanel extends HTMLElement {
 
   _renderTable() {
     if (!this._data) return;
+    this._renderCandidates();
     const all = this._data.devices.filter((d) => !d.ignored);
     const low = all.filter((d) => d.low);
     const suspected = all.filter((d) => d.suspected).length;
@@ -494,6 +509,46 @@ class BatteryLogPanel extends HTMLElement {
   }
 
   // ---------------------------------------------------------------- formats
+
+  /** Possible past replacements found by the detection; the user decides about each. */
+  _renderCandidates() {
+    const list = this._data.candidates || [];
+    this._cands.hidden = !list.length;
+    if (!list.length) {
+      this._cands.replaceChildren();
+      return;
+    }
+    const decide = async (type, id) => {
+      const err = await this._run({ type, candidate_id: id });
+      if (err) this._alert(err);
+    };
+    this._cands.replaceChildren(
+      h(
+        "div",
+        { class: "chead" },
+        h("div", {}, h("div", { class: "ctitle" }, this._t("cand_title", { n: list.length })), h("div", { class: "sub" }, this._t("cand_hint"))),
+        h("button", { class: "btn", onclick: async () => { const e = await this._run({ type: "battery_log/dismiss_candidates" }); if (e) this._alert(e); } }, this._t("cand_dismiss_all"))
+      ),
+      ...list.map((c) =>
+        h(
+          "div",
+          { class: "cand" },
+          h(
+            "div",
+            {},
+            h("div", { class: "name" }, c.name, " ", h("span", { class: `pill${c.confidence === "high" ? "" : " off"}` }, this._t(c.confidence === "high" ? "cand_high" : "cand_medium"))),
+            h("div", { class: "cinfo" }, [this._fmtDate(c.at, true), this._t("cand_levels", { a: c.before, b: c.after }), c.gap_days ? this._t("cand_gap", { n: c.gap_days }) : null].filter(Boolean).join(" · "))
+          ),
+          h(
+            "div",
+            { class: "acts" },
+            h("button", { class: "btn", onclick: () => decide("battery_log/dismiss_candidate", c.id) }, this._t("cand_dismiss")),
+            h("button", { class: "btn primary", onclick: () => decide("battery_log/accept_candidate", c.id) }, this._t("cand_add"))
+          )
+        )
+      )
+    );
+  }
 
   /** Date/time in the device's own format; an explicit HA profile choice (DMY/MDY/YMD, 12/24 h) wins. */
   _fmtDate(iso, withTime = false) {

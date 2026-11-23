@@ -23,6 +23,7 @@ devices by itself.
 </p>
 
 <p>
+  <img src="images/past-replacements.png" width="250" alt="Possible past replacements waiting for a decision">
   <img src="images/dialog-confirm.png" width="250" alt="Confirming a possible replacement">
   <img src="images/tracked-devices.png" width="250" alt="Tracked and ignored devices">
 </p>
@@ -57,6 +58,13 @@ the tracked and ignored devices screen.</sub>
   and model that have none get it too, and so does a newly found device. Conflicting
   types are never guessed, a type you clear yourself stays empty, and the panel marks
   auto-filled types. Can be switched off in the options.
+- **Detect past replacements (one time).** If Home Assistant has kept the battery levels,
+  **Configure, Detect past replacements** finds moments when a battery was most likely
+  replaced (a lasting jump back to full). Confident findings are added to the history,
+  less certain ones wait in the panel with an Add button, and the first-seen date can be
+  added for devices without any entry. Devices where you made entries yourself are left
+  alone, nothing is overwritten, there is a preview mode, and it always ends with a report
+  (see the troubleshooting table below).
 - **Your own battery types.** Nine predefined (CR2032, CR2450, CR123A, CR2, AAA,
   AA, 9V, Built-in rechargeable, Other) plus "Add new type..." from the panel.
 - **Tracked devices screen.** Switch off devices that should not be tracked
@@ -158,6 +166,30 @@ automation:
             {{ trigger.event.data.device_name }}: battery level jumped
             to {{ trigger.event.data.to_level }}%. Confirm the change in Battery Log.
 ```
+
+## Detect past replacements: how it decides and what the report means
+
+It reads the long-term statistics of each battery sensor (hourly) and looks for a lasting
+jump: the level before (median of 48 hours) is clearly lower than after (median of 72 hours),
+and the first day afterwards stays high, so one-hour blips are ignored. A rise of 30 points
+or more to at least 85%, or a smaller rise that follows a week without data, is "likely" and
+added automatically; a rise of 15 to 29 points on a noisy sensor is "uncertain" and waits in
+the panel for you. Candidates within three days of an existing entry are dropped. It can be
+used once (the menu item disappears after a real run); a preview does not count.
+
+It never stops with an unexplained error. The result screen always shows what was checked,
+added and skipped, and if something went wrong, a code with the device and the reason:
+
+| Code | Meaning | What happens |
+|---|---|---|
+| BL-D01 | The recorder is not available | Nothing was checked; check that the recorder integration is set up |
+| BL-D02 | Reading the statistics of one device failed | That device is skipped, the others continue |
+| BL-D03 | Analysing one device failed | That device is skipped, the others continue |
+| BL-D04 | Storing a result for one device failed | The other results are stored |
+| BL-D05 | Saving the "done" mark failed | Results are stored, the menu item may stay |
+| BL-D00 | Something unexpected | The run stops, the counts show what was done before; details in the Home Assistant log |
+
+If you report a problem, a screenshot of the result screen is enough. Running it again is safe.
 
 ## Coming from Battery Notes
 
