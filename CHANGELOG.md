@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1
+
+- Changed: every icon in the panel is an mdi icon of Home Assistant. The sort marker in the table
+  header is an icon too, and the text-glyph fallbacks (list, pencil, trash, arrows) are gone.
+
 ## 0.6.0
 
 - New: click a level badge to see the battery level over time (long-term statistics, at most

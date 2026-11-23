@@ -1,5 +1,5 @@
 /* Battery Log panel. Plain web component, no dependencies and no HA-internal
- * elements except <ha-icon> (optional, with a text fallback). All data coming
+ * elements except <ha-icon> (the mdi icons of Home Assistant). All data coming
  * from Home Assistant (device names, notes, ...) is inserted with textContent. */
 
 const NEW_TYPE = "__new__";
@@ -215,7 +215,7 @@ dialog .field { display:grid; gap:6px; margin-bottom:14px; font-size:14px; }
 dialog .hint { margin-bottom:14px; }
 dialog .err { color:var(--error-color, #db4437); font-size:13px; min-height:1em; margin-bottom:8px; }
 dialog .btns { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
-.fb { font-size:16px; line-height:1; }
+th .sorticon { --mdc-icon-size:16px; vertical-align:middle; margin-left:2px; }
 `;
 
 const COLUMNS = [
@@ -328,12 +328,12 @@ class BatteryLogPanel extends HTMLElement {
 
   // ----------------------------------------------------------- small widgets
 
-  _icon(name, fallback) {
-    return customElements.get("ha-icon") ? h("ha-icon", { icon: name }) : h("span", { class: "fb" }, fallback);
+  _icon(name) {
+    return h("ha-icon", { icon: name });
   }
 
-  _ibtn(name, fallback, title, onclick, cls = "") {
-    return h("button", { class: `ibtn ${cls}`.trim(), title, "aria-label": title, onclick }, this._icon(name, fallback));
+  _ibtn(name, title, onclick, cls = "") {
+    return h("button", { class: `ibtn ${cls}`.trim(), title, "aria-label": title, onclick }, this._icon(name));
   }
 
   _setTitle(el, text) {
@@ -348,15 +348,15 @@ class BatteryLogPanel extends HTMLElement {
     this._built = true;
     const root = this.shadowRoot;
 
-    this._menuBtn = this._ibtn("mdi:menu", "☰", "Menu", () => this.dispatchEvent(new Event("hass-toggle-menu", { bubbles: true, composed: true })), "menu");
-    this._backBtn = this._ibtn("mdi:arrow-left", "←", "Back", () => this._setView("table"));
-    this._cogBtn = this._ibtn("mdi:tune-variant", "⚙", "Choose tracked devices", () => this._setView("manage"));
+    this._menuBtn = this._ibtn("mdi:menu", "Menu", () => this.dispatchEvent(new Event("hass-toggle-menu", { bubbles: true, composed: true })), "menu");
+    this._backBtn = this._ibtn("mdi:arrow-left", "Back", () => this._setView("table"));
+    this._cogBtn = this._ibtn("mdi:tune-variant", "Choose tracked devices", () => this._setView("manage"));
     this._title = h("h1", {}, "Battery Log");
     this._bar = h("div", { class: "bar" });
 
     this._search = h("input", { type: "search", oninput: (e) => this._setFilter("q", e.target.value) });
     this._sortSel = h("select", { onchange: (e) => this._setSort(e.target.value) }, SORTS.map(([k]) => h("option", { value: k })));
-    this._sortDir = this._ibtn("mdi:arrow-up", "↑", "Sort direction", () => this._setSort(this._sort.key, true));
+    this._sortDir = this._ibtn("mdi:arrow-up", "Sort direction", () => this._setSort(this._sort.key, true));
     this._typeSel = h("select", { onchange: (e) => this._setFilter("type", e.target.value) });
     this._areaSel = h("select", { onchange: (e) => this._setFilter("area", e.target.value) });
     this._statusSel = h(
@@ -537,7 +537,7 @@ class BatteryLogPanel extends HTMLElement {
       ...(ignoredCount ? [this._plural("ignored_n", ignoredCount), h("button", { class: "linkbtn", onclick: () => this._setView("manage") }, this._t("show_restore"))] : [])
     );
     this._sortSel.value = this._sort.key;
-    this._sortDir.replaceChildren(this._icon(this._sort.dir > 0 ? "mdi:arrow-up" : "mdi:arrow-down", this._sort.dir > 0 ? "↑" : "↓"));
+    this._sortDir.replaceChildren(this._icon(this._sort.dir > 0 ? "mdi:arrow-up" : "mdi:arrow-down"));
 
     this._syncFilterControls();
     const rows = this._sorted(this._visible());
@@ -824,7 +824,7 @@ class BatteryLogPanel extends HTMLElement {
           "th",
           { class: c.key ? "" : "nosort", onclick: c.key ? () => this._setSort(c.key, c.key === this._sort.key) : null },
           c.label ? this._t(c.label) : "",
-          this._sort.key === c.key ? (this._sort.dir > 0 ? " ▲" : " ▼") : ""
+          this._sort.key === c.key ? h("ha-icon", { class: "sorticon", icon: this._sort.dir > 0 ? "mdi:arrow-up" : "mdi:arrow-down" }) : null
         )
       )
     );
@@ -840,9 +840,9 @@ class BatteryLogPanel extends HTMLElement {
       h("td", {}, this._typeSelect(d), this._autoHint(d)),
       h("td", {}, this._levelPill(d)),
       h("td", {}, d.last_changed ? [this._fmtDate(d.last_changed), h("div", { class: "sub" }, this._daysAgo(d.last_changed))] : h("span", { class: "muted" }, this._t("never"))),
-      h("td", {}, d.changes ? h("button", { class: "btn", "aria-expanded": String(open), onclick: () => this._toggleHistory(d.device_id) }, `${d.changes}`, this._icon("mdi:format-list-bulleted", "☰")) : h("span", { class: "muted" }, "0")),
+      h("td", {}, d.changes ? h("button", { class: "btn", "aria-expanded": String(open), onclick: () => this._toggleHistory(d.device_id) }, `${d.changes}`, this._icon("mdi:format-list-bulleted")) : h("span", { class: "muted" }, "0")),
       h("td", {}, this._avg(d) || h("span", { class: "muted" }, "—")),
-      h("td", {}, h("button", { class: "btn", onclick: () => this._openChange(d) }, this._icon("mdi:battery-sync", "⟳"), this._t("btn_change")))
+      h("td", {}, h("button", { class: "btn", onclick: () => this._openChange(d) }, this._icon("mdi:battery-sync"), this._t("btn_change")))
     );
     const out = [tr];
     if (open && d.history.length) out.push(h("tr", { class: "histrow" }, h("td", { colspan: COLUMNS.length }, this._historyList(d))));
@@ -864,7 +864,7 @@ class BatteryLogPanel extends HTMLElement {
         "div",
         { class: "dev-foot" },
         h("div", { class: "sub" }, stats),
-        h("div", { class: "actions" }, d.changes ? this._ibtn("mdi:format-list-bulleted", "☰", this._t("btn_history"), () => this._toggleHistory(d.device_id), open ? "on" : "") : null, this._ibtn("mdi:battery-sync", "⟳", this._t("btn_change"), () => this._openChange(d)))
+        h("div", { class: "actions" }, d.changes ? this._ibtn("mdi:format-list-bulleted", this._t("btn_history"), () => this._toggleHistory(d.device_id), open ? "on" : "") : null, this._ibtn("mdi:battery-sync", this._t("btn_change"), () => this._openChange(d)))
       ),
       open && d.history.length ? h("div", { class: "histbox" }, this._historyList(d)) : null
     );
@@ -890,7 +890,7 @@ class BatteryLogPanel extends HTMLElement {
             h("span", {}, h("span", { class: "d" }, this._fmtDate(e.at)), h("span", { class: "t" }, this._fmtTime(e.at))),
             span ? h("span", { class: "span", title: this._t("span_title", { v: span.short }) }, span.short) : null
           ),
-          h("div", { class: "acts" }, this._ibtn("mdi:pencil", "✎", this._t("btn_edit"), () => this._openEdit(d, e)), this._ibtn("mdi:delete", "🗑", this._t("btn_delete"), () => this._confirmDelete(d, e))),
+          h("div", { class: "acts" }, this._ibtn("mdi:pencil", this._t("btn_edit"), () => this._openEdit(d, e)), this._ibtn("mdi:delete", this._t("btn_delete"), () => this._confirmDelete(d, e))),
           meta ? h("div", { class: "meta" }, meta) : null
         );
       })
