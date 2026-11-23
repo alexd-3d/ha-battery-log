@@ -626,6 +626,21 @@ class BatteryLogManager:
         self.store.async_schedule_save()
         self._notify_device(device_id)
 
+    async def async_level_history(self, device_id: str) -> dict[str, Any]:
+        """Battery level over time for the popup (long-term statistics, at most two years)."""
+        self._require_device(device_id)
+        source = self.scanned[device_id]
+        if not source.level_entity:
+            raise HomeAssistantError("This device has no battery level sensor")
+        from .detector import read_level_history
+
+        try:
+            points = await read_level_history(self.hass, source.level_entity, dt_util.utcnow().timestamp())
+        except Exception as exc:  # noqa: BLE001 - the panel shows a readable message
+            _LOGGER.warning("Reading the level history of %s failed: %r", source.level_entity, exc)
+            raise HomeAssistantError(f"Could not read the statistics ({type(exc).__name__})") from exc
+        return {"points": points}
+
     # ---------------------------------------------------------------- read side
 
     def device_name(self, device_id: str) -> str:

@@ -51,6 +51,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     """Register all commands."""
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_get)
+    websocket_api.async_register_command(hass, ws_level_history)
     for handler in (
         _command(
             {
@@ -127,6 +128,17 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
         ),
     ):
         websocket_api.async_register_command(hass, handler)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "battery_log/level_history", **_DEVICE})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_level_history(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict) -> None:
+    """Level history of one device for the chart popup."""
+    try:
+        connection.send_result(msg["id"], await _manager(hass).async_level_history(msg["device_id"]))
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "battery_log_error", str(err))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "battery_log/get"})

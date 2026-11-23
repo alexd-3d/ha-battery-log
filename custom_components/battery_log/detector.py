@@ -23,7 +23,15 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from .const import MANUAL_SOURCES, SOURCE_DETECT
-from .logic import candidate_note, detect_replacements, format_errors, parse_iso
+from .logic import (
+    candidate_note,
+    detect_replacements,
+    format_errors,
+    history_windows,
+    merge_history,
+    normalize_rows,
+    parse_iso,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,30 +42,32 @@ def _error(code: str, device: str, exc: Exception) -> dict[str, str]:
     return {"code": code, "device": device, "type": type(exc).__name__, "detail": str(exc)[:140]}
 
 
-async def _read_rows(hass: HomeAssistant, entity_id: str) -> list[tuple[float, float]]:
-    """Hourly (timestamp, level) rows of one sensor from the long-term statistics."""
+async def _read_rows(
+    hass: HomeAssistant,
+    entity_id: str,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    period: str = "hour",
+) -> list[tuple[float, float]]:
+    """(timestamp, level) rows of one sensor from the long-term statistics."""
     from homeassistant.components.recorder import get_instance
     from homeassistant.components.recorder.statistics import statistics_during_period
 
-    start = datetime(2000, 1, 1, tzinfo=timezone.utc)
+    if start is None:
+        start = datetime(2000, 1, 1, tzinfo=timezone.utc)
     data = await get_instance(hass).async_add_executor_job(
-        statistics_during_period, hass, start, None, {entity_id}, "hour", None, {"mean", "min", "max"}
+        statistics_during_period, hass, start, end, {entity_id}, period, None, {"mean", "min", "max"}
     )
-    rows: list[tuple[float, float]] = []
-    for row in data.get(entity_id, []):
-        level = row.get("mean")
-        if level is None:
-            level = row.get("max")
-        stamp = row.get("start")
-        if isinstance(stamp, datetime):
-            stamp = stamp.timestamp()
-        elif isinstance(stamp, (int, float)) and stamp > 1e11:
-            stamp = stamp / 1000  # milliseconds
-        if level is None or stamp is None:
-            continue
-        rows.append((float(stamp), float(level)))
-    rows.sort()
-    return rows
+    return normalize_rows(data.get(entity_id, []))
+
+
+async def read_level_history(hass: HomeAssistant, entity_id: str, now: float) -> list[list[float]]:
+    """Level history for the popup: daily points for the older part, hourly for the last 60 days."""
+    start, split = history_windows(now)
+    to_dt = lambda ts: datetime.fromtimestamp(ts, tz=timezone.utc)  # noqa: E731
+    old = await _read_rows(hass, entity_id, to_dt(start), to_dt(split), "day")
+    recent = await _read_rows(hass, entity_id, to_dt(split), None, "hour")
+    return merge_history(old, recent, split)
 
 
 async def async_detect_history(

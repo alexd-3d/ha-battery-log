@@ -48,19 +48,28 @@
   прожила попередня батарея.
 - **Панель замість картки.** Таблиця з сортуванням і фільтрами (тип, зона,
   стан), пошук, кольори рівня, підсумок «купити» за типами батарей, середній
-  термін служби. На телефоні вона перетворюється на список карток із кнопками-іконками.
+  термін служби. Цифри над таблицею працюють як швидкі фільтри: натисніть **з низьким рівнем**,
+  **до підтвердження** або тип у **Купити**, а клік по рядку відкриває список замін.
+  На телефоні вона перетворюється на список карток із кнопками-іконками.
+- **Історія рівня заряду.** Натисніть на значок рівня, щоб побачити рівень батареї в часі: від
+  першого записаного значення й не більше ніж за останні 2 роки (щогодини за останні 60 днів,
+  раніше щодня), з вашими рівнями «низький» і «попередження» та позначеними замінами. Використовує
+  довготривалу статистику Home Assistant, тож потрібен датчик, для якого вона є.
 - **Підказка «Замінено?».** Коли рівень батареї різко зростає (за замовчуванням
   на 25 пунктів) або зникає ознака «низький заряд», біля рядка зʼявляється
   позначка. Торкніться її, щоб підтвердити: дата підставляється з моменту, коли
   стрибок побачили, її можна змінити, додати нотатку або відповісти «Не
-  замінювали». Без вашого підтвердження нічого не записується.
+  замінювали». Без вашого підтвердження нічого не записується. Підказка зʼявляється
+  лише для рівня, якого не було останні 14 днів, тож датчики, що блимають між кількома
+  значеннями, не набридають; «Не замінювали» тримає цей пристрій у спокої 14 днів, а підказка
+  зникає сама, коли рівень повертається назад.
 - **Автозаповнення за моделлю.** Коли ви встановлюєте тип батареї, інші пристрої того ж
   виробника й моделі без типу отримують його теж, так само й щойно знайдений пристрій.
   Суперечливі типи не вгадуються, тип, який ви очистили самі, лишається порожнім, а панель
   позначає автозаповнені типи. Можна вимкнути в параметрах.
 - **Виявлення минулих замін (одноразово).** Якщо Home Assistant зберіг рівні батарей,
   **Configure, Виявити минулі заміни** знаходить моменти, коли батарею, найімовірніше,
-  замінили (стійкий стрибок назад до повного заряду). Впевнені знахідки додаються в історію,
+  замінили (стійкий стрибок назад до повного заряду). Запускається один раз, вами. Впевнені знахідки додаються в історію,
   менш певні чекають у панелі з кнопкою «Додати», а дату першої появи можна додати для
   пристроїв без записів. Пристрої, де записи зробили ви, пропускаються, нічого не
   перезаписується, є режим попереднього перегляду, і завершується це завжди звітом
@@ -80,12 +89,15 @@
 
 ## Встановлення
 
-### HACS (рекомендовано)
+### HACS або Marketplace (рекомендовано)
 
-1. HACS, меню з трьома крапками, **Custom repositories**.
+У Home Assistant 2026.11 HACS вбудовано як **Settings, Marketplace**; у старіших версіях це
+інтеграція HACS. Кроки однакові, а назви пунктів меню можуть трохи відрізнятися.
+
+1. HACS або Marketplace, меню з трьома крапками, **Custom repositories**.
 2. Репозиторій `https://github.com/alexd-3d/ha-battery-log`, категорія
    **Integration**, **Add**. (Або скористайтеся кнопкою вгорі сторінки.)
-3. Знайдіть **Battery Log** у HACS і натисніть **Download**.
+3. Знайдіть **Battery Log** і натисніть **Download**.
 4. Перезапустіть Home Assistant.
 5. **Settings, Devices & services, Add integration, Battery Log.** Нічого
    заповнювати не треба.
@@ -96,8 +108,8 @@
 Home Assistant, перезапустіть і додайте інтеграцію, як описано вище.
 
 Мінімум **Home Assistant 2025.8** (найстаріша версія з потрібними інтеграції
-API; на старіших не перевірялось). Розроблено й перевірено лише на інсталяції
-автора: Home Assistant 2026.10 із пристроями Zigbee2MQTT. Має працювати з будь-якою
+API; на старіших не перевірялось). Розроблено й перевірено на інсталяції
+автора: Home Assistant 2026.10 і 2026.11 із пристроями Zigbee2MQTT. Має працювати з будь-якою
 інтеграцією, яка віддає стандартний датчик батареї (Zigbee, Z-Wave, Matter, Wi-Fi
 тощо), але перевірено лише Zigbee2MQTT.
 
@@ -108,7 +120,11 @@ API; на старіших не перевірялось). Розроблено 
   необовʼязковий (параметри інтеграції).
 - **Замінити батарею** відкриває діалог: дата й час (за замовчуванням зараз), тип і
   нотатки. Той самий діалог редагує старі записи.
-- Іконка списку в рядку відкриває історію пристрою.
+- Клік по рядку (або іконка списку) відкриває історію замін. Клік по значку рівня показує рівень
+  батареї в часі. Червона рамка на значку означає, що сам пристрій повідомляє про низький заряд,
+  хоча його рівень вищий за «низький».
+- Клік по цифрах над таблицею вмикає фільтр: **з низьким рівнем**, **до підтвердження** або тип у
+  **Купити**. Повторний клік скидає його; перша цифра скидає всі фільтри.
 - Іконка налаштувань угорі відкриває **Відстежувані пристрої**.
 - Тип батареї можна змінити й на сторінці пристрою чи в автоматизаціях.
 
@@ -119,7 +135,7 @@ Settings, Devices & services, Battery Log, **Configure**:
 | Параметр | За замовчуванням | Значення |
 |---|---|---|
 | Показувати в бічному меню | увімкнено | Якщо вимкнено, панель лишається доступною зі сторінки інтеграції. |
-| Низький рівень (червоний) | 20% | Цей рівень і нижче: червоний, враховується в «купити». |
+| Низький рівень (червоний) | 20% | Цей рівень і нижче: червоний, враховується в «купити». Пристрій, який сам повідомляє про низький заряд при вищому рівні, зберігає свій колір, отримує червону рамку й теж враховується. |
 | Рівень попередження (жовтий) | 50% | Вище «низького» і до цього значення жовтий, вище зелений. |
 | Автозаповнення типу батареї за такою ж моделлю | увімкнено | Підставляти тип з пристроїв того ж виробника й моделі (також для нових пристроїв). |
 | Можлива заміна: зростання рівня | 25 | Зростання щонайменше на стільки пунктів викликає підказку «Замінено?». |
@@ -212,7 +228,7 @@ Battery Notes цього пункту нема). Він одноразово п�
 
 ## Порівняння з іншими
 
-Огляд схожих проєктів станом на листопад 2026. Він спирається лише на їхню
+Огляд схожих проєктів станом на листопад 2026 (версії, дати й зірки перевірено 24 листопада 2026). Він спирається лише на їхню
 публічну документацію, дописи спільноти й сторінки GitHub (релізи, ліцензія,
 зірки), які прочитав автор Battery Log, тож це не тестування програм. Проєкти
 швидко змінюються: перевіряйте їхні сторінки й відкрийте issue тут, якщо щось
@@ -225,8 +241,8 @@ Battery Notes цього пункту нема). Він одноразово п�
 | | **Battery Log** | [Battery Notes](https://github.com/andrew-codechimp/HA-Battery-Notes) | [Device Sentinel](https://github.com/TheThinkingHome/device_sentinel) | [BatteryBrain](https://github.com/larsbaum/battery_brain) | [Battery Status Manager](https://github.com/OleSint/ha-battery-status-manager) |
 |---|---|---|---|---|---|
 | **Призначення** | <sub>Тип батареї та журнал замін</sub> | <sub>Тип батареї, остання заміна, відстеження низького заряду й відсутності звітів</sub> | <sub>Завислі пристрої, стан батареї та сигналу</sub> | <sub>Вивчає розряд кожного пристрою</sub> | <sub>Сповіщення про низький заряд і швидкий розряд</sub> |
-| **Версія (останній реліз)** | <sub>0.3.2</sub> | <sub>3.8.1 (3.9.0 пре-реліз)</sub> | <sub>0.29.4 (пре-реліз)</sub> | <sub>1.0.2</sub> | <sub>1.2.0</sub> |
-| **Останнє оновлення (останній реліз)** | <sub>16 лис 2026</sub> | <sub>14 лис 2026</sub> | <sub>16 лис 2026</sub> | <sub>12 лис 2026</sub> | <sub>7 жов 2026</sub> |
+| **Версія (останній реліз)** | <sub>0.6.0</sub> | <sub>3.8.1 (3.9.0 пре-реліз)</sub> | <sub>0.30.5 (пре-реліз)</sub> | <sub>1.0.2</sub> | <sub>1.2.0</sub> |
+| **Останнє оновлення (останній реліз)** | <sub>24 лис 2026</sub> | <sub>30 жов 2026 (пре-реліз 14 лис)</sub> | <sub>23 лис 2026 (пре-реліз)</sub> | <sub>12 лис 2026</sub> | <sub>7 жов 2026</sub> |
 | **Самі знаходять пристрої** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>З реєстрів, без кроку на пристрій</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Збіг із бібліотекою, потім кожен пристрій додається з картки виявлення чи вручну</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Вивчає пристрої автоматично</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Автоматично</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Усі сутності батарей, обсяг у налаштуванні</sub> |
 | **Тип батареї** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Ваш список, 9 готових</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Бібліотека спільноти й ручне введення</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="нема"> |
 | **Кількість батарей** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="нема"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="нема"> |
@@ -234,6 +250,7 @@ Battery Notes цього пункту нема). Він одноразово п�
 | **Повна історія замін** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Нотатки, редагування й видалення</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="нема"><br><sub>Лише остання дата</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>З архівом</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="нема"> |
 | **Нотатка до заміни** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Одна нотатка на пристрій</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="нема"> |
 | **Виявлення заміни** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Підказка при стрибку рівня, ви підтверджуєте; дату можна змінити</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Подія при зростанні рівня; дату не встановлює</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Виявляє заміну, просить підтвердити</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="нема"> |
+| **Минулі заміни з історії** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Одноразове сканування довготривалої статистики; впевнені знахідки додаються, решта чекає на ваше рішення</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> |
 | **Тривалість між замінами** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Для кожного запису й середня</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="нема"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано; є оцінка залишкового терміну</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="нема"><br><sub>Натомість є прогноз розряду</sub> |
 | **Низький заряд** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Колір у панелі й підсумок «купити», глобальні пороги; без сутності чи події</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Сенсор, пороги на пристрій, події, тригери</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Адаптивні пороги</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>Зі сповіщеннями</sub> |
 | **Виявлення «не звітує»** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="нема"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"> |
@@ -245,19 +262,20 @@ Battery Notes цього пункту нема). Він одноразово п�
 | **Імпорт з іншого проєкту** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="є"><br><sub>З Battery Notes</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="частково чи не описано"><br><sub>Не описано</sub> |
 | **Сутностей на пристрій** | <sub>3</sub> | <sub>4–5</sub> | <sub>Не описано</sub> | <sub>Немає на пристрій</sub> | <sub>Немає</sub> |
 | **Використання мережі** | <sub>Жодного</sub> | <sub>Завантажує бібліотеку пристроїв</sub> | <sub>Автор стверджує, що нема, окрім ваших сповіщень</sub> | <sub>Не описано</sub> | <sub>Не описано</sub> |
-| **Мінімальний Home Assistant** | <sub>2025.8 (перевірено лише на 2026.10)</sub> | <sub>2026.9</sub> | <sub>2026.5</sub> | <sub>2025.8</sub> | <sub>2023.6</sub> |
+| **Мінімальний Home Assistant** | <sub>2025.8 (перевірено на 2026.10 і 2026.11)</sub> | <sub>2026.9</sub> | <sub>2026.5</sub> | <sub>2025.8</sub> | <sub>2023.6</sub> |
 | **Поширення** | <sub>Власний репозиторій HACS</sub> | <sub>Стандартний каталог HACS</sub> | <sub>Стандартний каталог HACS</sub> | <sub>Власний репозиторій HACS</sub> | <sub>Власний репозиторій HACS</sub> |
 | **Ліцензія** | <sub>MIT</sub> | <sub>MIT</sub> | <sub>GPL-3.0</sub> | <sub>MIT</sub> | <sub>MIT</sub> |
-| **Зрілість** | <sub>Новий: перший реліз у листопаді 2026, перевірено лише на інсталяції автора</sub> | <sub>Близько 29 000 завантажень у HACS, 1 209 зірок на GitHub, багато релізів</sub> | <sub>32 зірки на GitHub, пре-релізи</sub> | <sub>17 зірок на GitHub</sub> | <sub>2 зірки на GitHub</sub> |
+| **Зрілість** | <sub>Новий: перший реліз у листопаді 2026. Працює на інсталяції автора (Home Assistant 2026.10 і 2026.11, Zigbee2MQTT); автоматичні тести й CI (Hassfest, перевірка HACS)</sub> | <sub>1 215 зірок на GitHub, багато релізів</sub> | <sub>50 зірок на GitHub, пре-релізи</sub> | <sub>17 зірок на GitHub</sub> | <sub>2 зірки на GitHub</sub> |
 
 ### Чого Battery Log не робить
 
 - Не надсилає сповіщень, не прогнозує й не навчається. Сенсор часу, сервіси й
   події є, якщо ви хочете зробити власні сповіщення.
 - Нема сутностей, тригерів чи порогів на пристрій для низького заряду й «не звітує».
-- Нема бібліотеки батарей: типи ті, що ви оберете, без автоматичної підказки за моделлю пристрою.
+- Нема бібліотеки батарей: типи ті, що ви оберете. Єдина підказка: копіювання встановленого вами типу на
+  інші пристрої того ж виробника й моделі у вашому домі.
 - Нема кількості батарей і підтримки пристроїв без датчика батареї в Home Assistant.
-- Перевірено лише на інсталяції автора (Home Assistant 2026.10, пристрої Zigbee2MQTT).
+- Перевірено лише на інсталяції автора (Home Assistant 2026.10 і 2026.11, пристрої Zigbee2MQTT).
   Мінімальна версія 2025.8 визначена за API Home Assistant, які використовує інтеграція,
   і на старіших версіях не перевірялась.
 - Молодий проєкт з одним автором.
@@ -274,8 +292,9 @@ Battery Notes цього пункту нема). Він одноразово п�
 
 - Панель потребує облікового запису адміністратора.
 - Деякі пристрої (наприклад, Zigbee-датчики з грубими кроками рівня) віддають
-  рівень «стрибками». Через це можуть зʼявлятися підказки «Замінено?», які
-  відхиляються кнопкою **Не замінювали**.
+  рівень «стрибками», часто 50, 75 і 100 по черзі. Підказка «Замінено?» потребує рівня
+  вищого за все, що було за останні 14 днів, за пристроєм починають стежити лише після
+  перших 3 днів, а **Не замінювали** вимикає підказки цього пристрою на 14 днів.
 - Пристрій без жодного датчика батареї в Home Assistant не знаходиться.
 - Видалення інтеграції лишає `.storage/battery_log` на місці, щоб історія
   пережила перевстановлення. Видаліть файл, якщо хочете позбутися даних.

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.6.0
+
+- New: click a level badge to see the battery level over time (long-term statistics, at most
+  the last 2 years; hourly for the last 60 days, daily before) with the low and warning levels
+  and the replacements marked.
+- New: click anywhere on a row to open or close its replacement list.
+- New: the numbers above the table are filters. Click **low**, **to confirm** or a battery type
+  under **To buy**; click again to clear, the first number clears all filters.
+- Changed: a level badge is coloured by its level only. A device that reports a low battery by
+  itself while its level is above the low level gets a red border and still counts as low. The
+  label of the counter no longer says "(<= 20%)".
+- Fixed: the "Replaced?" badge kept coming back on sensors that flap between a few levels
+  (for example 50, 75 and 100) even after "Not replaced". A hint now needs a level higher
+  than anything seen in the last 14 days, is not raised during a device's first 3 days of
+  watching, "Not replaced" silences the device for 14 days, and a pending hint goes away
+  when the level falls back to where it started.
+- Documentation: README and comparison table brought up to date (Home Assistant 2026.11
+  Marketplace, versions, tested versions, past replacements from history).
+
 ## 0.5.0
 
 - New: **Detect past replacements** in the Configure menu. It reads the long-term

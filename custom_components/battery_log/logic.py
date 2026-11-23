@@ -319,3 +319,41 @@ def hint_returned(suspected: dict[str, Any] | None, level: float | None) -> bool
     """True when a pending hint was only a blip: the level is back where it started."""
     start = (suspected or {}).get("from")
     return start is not None and level is not None and level <= start + RETURN_TOLERANCE
+
+
+# ---------------------------------------------------------------------------
+# Level history popup: rows from the long-term statistics, at most two years back
+# ---------------------------------------------------------------------------
+HISTORY_DAYS = 730  # never look further back than two years
+HISTORY_HOURLY_DAYS = 60  # hourly points for the recent part, daily points before it
+
+
+def history_windows(now: float) -> tuple[float, float]:
+    """(start, split) timestamps: daily rows from `start` to `split`, hourly rows after it."""
+    return now - HISTORY_DAYS * SECONDS_PER_DAY, now - HISTORY_HOURLY_DAYS * SECONDS_PER_DAY
+
+
+def normalize_rows(raw: list[dict[str, Any]]) -> list[tuple[float, float]]:
+    """Statistics rows -> sorted (timestamp seconds, level) pairs; rows without a level are dropped."""
+    rows: list[tuple[float, float]] = []
+    for row in raw:
+        level = row.get("mean")
+        if level is None:
+            level = row.get("max")
+        stamp = row.get("start")
+        if isinstance(stamp, datetime):
+            stamp = stamp.timestamp()
+        elif isinstance(stamp, (int, float)) and stamp > 1e11:
+            stamp = stamp / 1000  # milliseconds
+        if level is None or stamp is None:
+            continue
+        rows.append((float(stamp), float(level)))
+    rows.sort()
+    return rows
+
+
+def merge_history(old_daily: list[tuple[float, float]], recent_hourly: list[tuple[float, float]], split: float) -> list[list[float]]:
+    """One series for the chart: daily rows before `split`, then every hourly row, rounded."""
+    points = [(t, v) for t, v in old_daily if t < split] + list(recent_hourly)
+    points.sort()
+    return [[int(t), round(v, 1)] for t, v in points]

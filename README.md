@@ -49,7 +49,13 @@ the tracked and ignored devices screen.</sub>
   previous battery lasted.
 - **A panel instead of a card.** Sortable and filterable table (type, area,
   status), search, level colours, shopping summary by battery type,
-  average battery life. On a phone it turns into a card list with icon buttons.
+  average battery life. The numbers above the table are shortcuts: click **low**,
+  **to confirm** or a type under **To buy** to filter, and click a row to open its
+  replacement list. On a phone it turns into a card list with icon buttons.
+- **Level history.** Click a level badge to see the battery level over time, from the
+  first recorded value and at most the last 2 years (hourly points for the last 60 days,
+  daily before), with your low and warning levels and the replacements marked. It uses the
+  long-term statistics of Home Assistant, so it needs a sensor that has them.
 - **"Replaced?" hint.** When a battery level jumps up (default 25 points), or a
   "battery low" flag clears, the row gets a badge. Tap it to confirm: the date
   is pre-filled with when the jump was seen and you can edit it, add notes, or
@@ -61,7 +67,7 @@ the tracked and ignored devices screen.</sub>
   and model that have none get it too, and so does a newly found device. Conflicting
   types are never guessed, a type you clear yourself stays empty, and the panel marks
   auto-filled types. Can be switched off in the options.
-- **Detect past replacements (one time).** If Home Assistant has kept the battery levels,
+- **Detect past replacements (one time, you start it).** If Home Assistant has kept the battery levels,
   **Configure, Detect past replacements** finds moments when a battery was most likely
   replaced (a lasting jump back to full). Confident findings are added to the history,
   less certain ones wait in the panel with an Add button, and the first-seen date can be
@@ -83,12 +89,15 @@ the tracked and ignored devices screen.</sub>
 
 ## Install
 
-### HACS (recommended)
+### HACS or the Marketplace (recommended)
 
-1. HACS, three dots menu, **Custom repositories**.
+From Home Assistant 2026.11 HACS is built in as **Settings, Marketplace**; older versions use the
+HACS integration. The steps are the same, and menu names may differ a little between versions.
+
+1. HACS or Marketplace, three dots menu, **Custom repositories**.
 2. Repository `https://github.com/alexd-3d/ha-battery-log`, category
    **Integration**, **Add**. (Or use the button at the top of this page.)
-3. Find **Battery Log** in HACS, **Download**.
+3. Find **Battery Log**, **Download**.
 4. Restart Home Assistant.
 5. **Settings, Devices & services, Add integration, Battery Log.** There is
    nothing to fill in.
@@ -99,8 +108,8 @@ Copy the `custom_components/battery_log` folder into your Home Assistant
 `config/custom_components/` folder, restart, then add the integration as above.
 
 Minimum **Home Assistant 2025.8** (the oldest version that has the APIs this
-integration uses; not tested on older versions). Developed and tested only on the
-author's own installation: Home Assistant 2026.10 with Zigbee2MQTT devices.
+integration uses; not tested on older versions). Developed and tested on the
+author's own installation: Home Assistant 2026.10 and 2026.11 with Zigbee2MQTT devices.
 Any integration that exposes a standard battery sensor (Zigbee, Z-Wave, Matter,
 Wi-Fi, ...) should work, but only Zigbee2MQTT has been checked.
 
@@ -111,7 +120,11 @@ Wi-Fi, ...) should work, but only Zigbee2MQTT has been checked.
   (integration options).
 - **Change battery** opens a dialog: date and time (now by default), type and
   notes. The same dialog edits old entries.
-- The list icon on a row opens its history.
+- Click a row (or its list icon) to open the history of replacements. Click a level
+  badge to see the battery level over time. A red border on a badge means that the device
+  itself reports a low battery although its level is above the low level.
+- Click the numbers above the table to filter: **low**, **to confirm**, or a type under
+  **To buy**. Click again to clear; the first number clears all filters.
 - The "tune" icon in the header opens **Tracked devices**.
 - The battery type can also be set from the device page or in automations.
 
@@ -122,7 +135,7 @@ Settings, Devices & services, Battery Log, **Configure**:
 | Option | Default | Meaning |
 |---|---|---|
 | Show in sidebar | on | The panel stays reachable from the integration page when off. |
-| Low level (red) | 20% | At or below: red, counted in "to buy". |
+| Low level (red) | 20% | At or below: red, counted in "to buy". A device that reports low by itself while above this level keeps its colour, gets a red border and is counted too. |
 | Warning level (yellow) | 50% | Above low and up to this value: yellow, higher is green. |
 | Auto-fill battery type for the same model | on | Fill the type from devices of the same manufacturer and model (also for new devices). |
 | Possible replacement: level rise | 25 | A rise of at least this many points raises the "Replaced?" hint. |
@@ -215,7 +228,7 @@ integrations can run side by side.
 
 ## How it compares
 
-An overview of related projects as of November 2026. It is based only on their
+An overview of related projects as of November 2026 (versions, dates and stars re-checked on 24 November 2026). It is based only on their
 public documentation, community posts and GitHub pages (releases, licence, stars),
 read by the author of Battery Log, so it is not a test of the software. Projects
 change quickly: please check their pages, and open an issue here if something is
@@ -228,8 +241,8 @@ A yellow question mark means "partly, or the pages I read did not say". It does 
 | | **Battery Log** | [Battery Notes](https://github.com/andrew-codechimp/HA-Battery-Notes) | [Device Sentinel](https://github.com/TheThinkingHome/device_sentinel) | [BatteryBrain](https://github.com/larsbaum/battery_brain) | [Battery Status Manager](https://github.com/OleSint/ha-battery-status-manager) |
 |---|---|---|---|---|---|
 | **Purpose** | <sub>Battery type and replacement log</sub> | <sub>Battery type, last replaced, low and not-reported tracking</sub> | <sub>Frozen devices, battery and signal health</sub> | <sub>Learns discharge behaviour per device</sub> | <sub>Low-battery and fast-drain notifications</sub> |
-| **Version (latest release)** | <sub>0.3.2</sub> | <sub>3.8.1 (3.9.0 pre-release)</sub> | <sub>0.29.4 (pre-release)</sub> | <sub>1.0.2</sub> | <sub>1.2.0</sub> |
-| **Last updated (latest release)** | <sub>16 Nov 2026</sub> | <sub>14 Nov 2026</sub> | <sub>16 Nov 2026</sub> | <sub>12 Nov 2026</sub> | <sub>7 Oct 2026</sub> |
+| **Version (latest release)** | <sub>0.6.0</sub> | <sub>3.8.1 (3.9.0 pre-release)</sub> | <sub>0.30.5 (pre-release)</sub> | <sub>1.0.2</sub> | <sub>1.2.0</sub> |
+| **Last updated (latest release)** | <sub>24 Nov 2026</sub> | <sub>30 Oct 2026 (pre-release 14 Nov)</sub> | <sub>23 Nov 2026 (pre-release)</sub> | <sub>12 Nov 2026</sub> | <sub>7 Oct 2026</sub> |
 | **Finds devices on its own** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>From the registries, no per-device step</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Library match, then each device is added from a discovery card or manually</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>Learns devices automatically</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>Automatic</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>All battery entities, scope chosen in setup</sub> |
 | **Battery type** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>Your own list, 9 predefined</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>Community library plus manual entry</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="no"> |
 | **Battery quantity** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="no"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="no"> |
@@ -237,6 +250,7 @@ A yellow question mark means "partly, or the pages I read did not say". It does 
 | **Full replacement history** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>Notes, edit and delete</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="no"><br><sub>Last date only</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>With an archive</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="no"> |
 | **Note per replacement** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>One note per device</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="no"> |
 | **Replacement detection** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>Hint on a level jump, you confirm; date editable</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Event on a level rise; does not set the date</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>Detects a swap, asks you to confirm</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="no"> |
+| **Past replacements from history** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>One-time scan of the long-term statistics; confident findings are added, the rest wait for your decision</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> |
 | **Lifetime between replacements** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>Per entry and average</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="no"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented; has remaining-life estimates</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="no"><br><sub>Has a depletion forecast instead</sub> |
 | **Low battery** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Colour in the panel and a shopping summary, global thresholds; no entity or event</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>Sensor, per-device thresholds, events, triggers</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>Adaptive thresholds</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>With notifications</sub> |
 | **"Not reported" detection** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-no.svg" width="18" height="18" alt="no"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"> |
@@ -248,19 +262,20 @@ A yellow question mark means "partly, or the pages I read did not say". It does 
 | **Import from another project** | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-yes.svg" width="18" height="18" alt="yes"><br><sub>From Battery Notes</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> | <img src="https://raw.githubusercontent.com/alexd-3d/ha-battery-log/main/images/mark-maybe.svg" width="18" height="18" alt="partly or not documented"><br><sub>Not documented</sub> |
 | **Entities added per device** | <sub>3</sub> | <sub>4 to 5</sub> | <sub>Not documented</sub> | <sub>None per device</sub> | <sub>None</sub> |
 | **Network use** | <sub>None</sub> | <sub>Downloads a device library</sub> | <sub>Author states none besides your notifications</sub> | <sub>Not documented</sub> | <sub>Not documented</sub> |
-| **Minimum Home Assistant** | <sub>2025.8 (tested only on 2026.10)</sub> | <sub>2026.9</sub> | <sub>2026.5</sub> | <sub>2025.8</sub> | <sub>2023.6</sub> |
+| **Minimum Home Assistant** | <sub>2025.8 (tested on 2026.10 and 2026.11)</sub> | <sub>2026.9</sub> | <sub>2026.5</sub> | <sub>2025.8</sub> | <sub>2023.6</sub> |
 | **Distribution** | <sub>HACS custom repository</sub> | <sub>HACS default store</sub> | <sub>HACS default store</sub> | <sub>HACS custom repository</sub> | <sub>HACS custom repository</sub> |
 | **License** | <sub>MIT</sub> | <sub>MIT</sub> | <sub>GPL-3.0</sub> | <sub>MIT</sub> | <sub>MIT</sub> |
-| **Maturity** | <sub>New: first release in November 2026, tested only on the author's own installation</sub> | <sub>About 29,000 HACS downloads, 1,209 GitHub stars, many releases</sub> | <sub>32 GitHub stars, pre-releases</sub> | <sub>17 GitHub stars</sub> | <sub>2 GitHub stars</sub> |
+| **Maturity** | <sub>New: first release in November 2026. Runs on the author's own installation (Home Assistant 2026.10 and 2026.11, Zigbee2MQTT); automated tests and CI (Hassfest, HACS validation)</sub> | <sub>1,215 GitHub stars, many releases</sub> | <sub>50 GitHub stars, pre-releases</sub> | <sub>17 GitHub stars</sub> | <sub>2 GitHub stars</sub> |
 
 ### What Battery Log does not do
 
 - No notifications, predictions or learning. The timestamp sensor, services and
   events are there if you want to build your own alerts.
 - No low-battery or not-reported entities, triggers or per-device thresholds.
-- No battery library: types are the ones you pick, with no automatic suggestion by device model.
+- No battery library: types are the ones you pick. The only suggestion is copying a type you set to other
+  devices of the same manufacturer and model in your own home.
 - No battery quantity, and no devices without a battery sensor in Home Assistant.
-- Tested only on the author's own installation (Home Assistant 2026.10, Zigbee2MQTT devices).
+- Tested on the author's own installation only (Home Assistant 2026.10 and 2026.11, Zigbee2MQTT devices).
   The minimum version, 2025.8, is derived from the Home Assistant APIs the integration uses and
   was not tested on older versions.
 - A young project with one author.
