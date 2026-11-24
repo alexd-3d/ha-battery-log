@@ -159,7 +159,20 @@ dialog.wide { width:min(720px, 94vw); }
 .chartbox svg { width:100%; height:auto; display:block; touch-action:pan-y; }
 .hlegend { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:var(--secondary-text-color); margin-bottom:6px; }
 .hlegend i { display:inline-block; width:14px; border-top:2px solid; vertical-align:middle; margin-right:5px; }
-.hnote { font-size:12px; color:var(--secondary-text-color); margin:6px 0 14px; }
+.hnote { font-size:12px; color:var(--secondary-text-color); margin:6px 0 4px; }
+.cwrap { position:relative; }
+.ctip { position:absolute; top:6%; left:0; pointer-events:none; opacity:0; transition:opacity .12s ease; transform:translateX(14px); z-index:2;
+  background:var(--card-background-color, #fff); color:var(--primary-text-color); border:1px solid var(--divider-color); border-radius:8px; padding:6px 10px; font-size:12px; white-space:nowrap; box-shadow:0 2px 10px rgba(0,0,0,.35); }
+.ctip.flip { transform:translateX(calc(-100% - 14px)); }
+.ctip.on { opacity:1; }
+.ctip b { font-size:14px; font-weight:500; }
+.ctip .sub { margin:0; }
+dialog.plain { padding:12px 20px 14px; }
+.dhead { display:flex; align-items:flex-start; gap:6px; margin:0 0 8px -10px; }
+.dhead .ibtn { border:0; flex:0 0 auto; }
+.dhead .dtitle { min-width:0; padding-top:2px; }
+.crumb { display:flex; align-items:center; flex-wrap:wrap; font-size:13px; color:var(--secondary-text-color); --mdc-icon-size:16px; }
+.dname { display:flex; align-items:center; gap:8px; font-size:20px; font-weight:500; }
 dialog h2 .pill { vertical-align:middle; margin-left:6px; }
 .ibtn { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; padding:0; border-radius:50%; border:1px solid var(--divider-color); background:transparent; color:var(--primary-text-color); cursor:pointer; --mdc-icon-size:22px; flex:0 0 auto; }
 .ibtn.on { background:color-mix(in srgb, var(--primary-text-color) 16%, transparent); }
@@ -586,13 +599,19 @@ class BatteryLogPanel extends HTMLElement {
 
   async _openLevelHistory(d) {
     const box = h("div", { class: "chartbox" }, h("div", { class: "empty" }, this._t("loading")));
-    this._openDialog({
-      wide: true,
-      closeOnly: true,
-      title: [d.name, this._levelPill(d, false)],
-      hint: [d.area, d.model, d.type].filter(Boolean).join(" · "),
-      fields: [box],
-    });
+    // like the default Home Assistant dialog: close at the top left, area and device above the title
+    const head = h(
+      "div",
+      { class: "dhead" },
+      this._ibtn("mdi:close", this._t("dlg_close"), () => this._dialog.close()),
+      h(
+        "div",
+        { class: "dtitle" },
+        h("div", { class: "crumb" }, ...[d.area, d.area ? this._icon("mdi:chevron-right") : null, d.name].filter(Boolean)),
+        h("div", { class: "dname" }, this._t("hist_level"), this._levelPill(d, false))
+      )
+    );
+    this._openDialog({ wide: true, head, fields: [box] });
     try {
       const res = await this._ws({ type: "battery_log/level_history", device_id: d.device_id });
       box.replaceChildren(...this._chart(d, res.points || []));
@@ -635,12 +654,9 @@ class BatteryLogPanel extends HTMLElement {
     });
     [[low, cLow], [warn, cWarn]].forEach(([v, c]) => svg.append(el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: c, "stroke-width": 1.2, "stroke-dasharray": "5 4" })));
 
-    const system = navigator.languages?.[0] || navigator.language || undefined;
-    const short = (t1 - t0) / 86400 < 120;
-    const tick = new Intl.DateTimeFormat(system, short ? { day: "numeric", month: "short" } : { month: "short", year: "2-digit" });
     for (let i = 0; i < 5; i++) {
       const t = t0 + ((t1 - t0) * i) / 4;
-      svg.append(el("text", { x: x(t), y: H - 8, "text-anchor": i === 0 ? "start" : i === 4 ? "end" : "middle", "font-size": 11, fill: cText }, tick.format(new Date(t * 1000))));
+      svg.append(el("text", { x: x(t), y: H - 8, "text-anchor": i === 0 ? "start" : i === 4 ? "end" : "middle", "font-size": 11, fill: cText }, this._fmtShort(t)));
     }
 
     // a long hole in the data (device offline) is a break in the line, not a straight stroke
@@ -668,14 +684,11 @@ class BatteryLogPanel extends HTMLElement {
       svg.append(dot);
     });
 
-    // hover / touch: crosshair and a small tooltip with the nearest value
-    const cross = el("line", { y1: T, y2: T + ph, stroke: cText, "stroke-width": 1, visibility: "hidden" });
-    const dot = el("circle", { r: 5, fill: cLine, stroke: "var(--card-background-color, #fff)", "stroke-width": 2, visibility: "hidden" });
-    const tip = el("g", { visibility: "hidden" });
-    const tipBg = el("rect", { width: 132, height: 38, rx: 6, fill: "var(--card-background-color, #fff)", stroke: cGrid });
-    const tipVal = el("text", { x: 10, y: 17, "font-size": 12, "font-weight": 600, fill: "var(--primary-text-color, #000)" });
-    const tipDate = el("text", { x: 10, y: 32, "font-size": 11, fill: cText });
-    tip.append(tipBg, tipVal, tipDate);
+    // hover / touch: crosshair and a tooltip. Everything drawn over the chart has pointer events off,
+    // otherwise the pointer lands on it, the chart sees "leave" and the tooltip blinks.
+    const cross = el("line", { y1: T, y2: T + ph, stroke: cText, "stroke-width": 1, visibility: "hidden", "pointer-events": "none" });
+    const dot = el("circle", { r: 5, fill: cLine, stroke: "var(--card-background-color, #fff)", "stroke-width": 2, visibility: "hidden", "pointer-events": "none" });
+    const tip = h("div", { class: "ctip" });
     const overlay = el("rect", { x: L, y: T, width: pw, height: ph, fill: "transparent" });
     const show = (e) => {
       const r = svg.getBoundingClientRect();
@@ -691,23 +704,28 @@ class BatteryLogPanel extends HTMLElement {
       const px = x(pt), py = y(pv);
       cross.setAttribute("x1", px); cross.setAttribute("x2", px);
       dot.setAttribute("cx", px); dot.setAttribute("cy", py);
-      tipVal.textContent = `${Math.round(pv)} %`;
-      tipDate.textContent = this._fmtDate(iso(pt), pt * 1000 > Date.now() - 60 * 86400000);
-      tip.setAttribute("transform", `translate(${px > W * 0.65 ? px - 142 : px + 10}, ${T + 30})`);
-      [cross, dot, tip].forEach((n) => n.setAttribute("visibility", "visible"));
+      [cross, dot].forEach((n) => n.setAttribute("visibility", "visible"));
+      const hourly = pt * 1000 > Date.now() - 60 * 86400000;
+      tip.replaceChildren(h("b", {}, `${Math.round(pv)} %`), h("div", { class: "sub" }, hourly ? `${this._fmtShort(pt)}, ${this._fmtTime(iso(pt))}` : this._fmtShort(pt)));
+      tip.style.left = `${(px / W) * r.width}px`;
+      tip.classList.toggle("flip", px > W * 0.55);
+      tip.classList.add("on");
     };
-    const hide = () => [cross, dot, tip].forEach((n) => n.setAttribute("visibility", "hidden"));
+    const hide = () => {
+      [cross, dot].forEach((n) => n.setAttribute("visibility", "hidden"));
+      tip.classList.remove("on");
+    };
     overlay.addEventListener("pointermove", show);
     overlay.addEventListener("pointerdown", show);
     overlay.addEventListener("pointerleave", hide);
-    svg.append(overlay, cross, dot, tip);
+    svg.append(overlay, cross, dot);
 
     const li = (color, dashed, label) => h("span", {}, h("i", { style: `border-color:${color};${dashed ? "border-top-style:dashed" : ""}` }), label);
     const legend = h("div", { class: "hlegend" }, li(cLine, false, this._t("hist_level")), li(cLow, true, this._t("hist_low", { x: low })), li(cWarn, true, this._t("hist_warn", { x: warn })), marks.length ? li(cOk, false, this._t("hist_changed")) : null);
     const span = this._span(iso(t0), iso(t1)).short;
     const capped = t0 - (nowS - 730 * 86400) < 3 * 86400;
     const range = capped ? this._t("hist_capped", { span }) : this._t("hist_from", { a: this._fmtDate(iso(t0)), span });
-    return [legend, svg, h("div", { class: "hnote" }, `${range} · ${this._t("hist_detail")}`)];
+    return [legend, h("div", { class: "cwrap" }, svg, tip), h("div", { class: "hnote" }, `${range} · ${this._t("hist_detail")}`)];
   }
 
   // ---------------------------------------------------------------- formats
@@ -760,6 +778,14 @@ class BatteryLogPanel extends HTMLElement {
     const d = new Date(iso);
     const date = new Intl.DateTimeFormat(dateLocale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
     return withTime ? `${date}, ${this._fmtTime(iso)}` : date;
+  }
+
+  /** Numeric date with a two-digit year; the order follows the Home Assistant profile (DMY gives DD.MM.YY). */
+  _fmtShort(seconds) {
+    const loc = this._hass?.locale || {};
+    const system = navigator.languages?.[0] || navigator.language || undefined;
+    const dateLocale = { DMY: "de-DE", MDY: "en-US", YMD: "sv-SE" }[loc.date_format] || system;
+    return new Intl.DateTimeFormat(dateLocale, { day: "2-digit", month: "2-digit", year: "2-digit" }).format(new Date(seconds * 1000));
   }
 
   _fmtTime(iso) {
@@ -905,7 +931,10 @@ class BatteryLogPanel extends HTMLElement {
   }
 
   _toggleHistory(id) {
-    this._expanded.has(id) ? this._expanded.delete(id) : this._expanded.add(id);
+    // opening a list closes the one that is open
+    const wasOpen = this._expanded.has(id);
+    this._expanded.clear();
+    if (!wasOpen) this._expanded.add(id);
     this._renderTable();
   }
 
@@ -993,7 +1022,7 @@ class BatteryLogPanel extends HTMLElement {
   }
 
   /** Generic dialog. `fields` are DOM nodes, `save` returns an error string or null. */
-  _openDialog({ title, hint, fields = [], save, saveLabel, extra = [], closeOnly = false, wide = false }) {
+  _openDialog({ title, hint, fields = [], save, saveLabel, extra = [], closeOnly = false, wide = false, head = null }) {
     const err = h("div", { class: "err" });
     const cancel = h("button", { class: "btn", type: "button", onclick: () => this._dialog.close() }, closeOnly ? this._t("dlg_close") : this._t("dlg_cancel"));
     const saveBtn = save
@@ -1007,9 +1036,13 @@ class BatteryLogPanel extends HTMLElement {
         } }, saveLabel || this._t("dlg_save"))
       : null;
     this._dialog.classList.toggle("wide", wide);
+    this._dialog.classList.toggle("plain", !!head);
     // replaceChildren() turns null into the text "null", so only real nodes go in
     this._dialog.replaceChildren(
-      ...[h("h2", {}, title), hint ? h("div", { class: "hint" }, hint) : null, ...fields, err, h("div", { class: "btns" }, ...extra, cancel, saveBtn)].filter(Boolean)
+      ...(head
+        ? [head, ...fields]
+        : [h("h2", {}, title), hint ? h("div", { class: "hint" }, hint) : null, ...fields, err, h("div", { class: "btns" }, ...extra, cancel, saveBtn)]
+      ).filter(Boolean)
     );
     if (!this._dialog.open) this._dialog.showModal();
   }

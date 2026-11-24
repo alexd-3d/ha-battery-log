@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.2
+
+- Fixed: the tooltip of the level chart no longer blinks when the pointer moves, and the values on
+  the right part of the chart can be read (nothing drawn over the chart takes the pointer any more).
+- Changed: the level history dialog follows the default Home Assistant dialog: a close button at the
+  top left, the area and device above the title, no bottom button, and a tooltip in the theme style.
+- Changed: the dates on the chart axis and in its tooltip are numeric (day first gives DD.MM.YY) and follow
+  the date format of your Home Assistant profile.
+- Changed: opening a list of replacements closes the one that was open.
+
 ## 0.6.1
 
 - Changed: every icon in the panel is an mdi icon of Home Assistant. The sort marker in the table
